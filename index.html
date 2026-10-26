@@ -9,7 +9,7 @@
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="icon" href="favicon.ico" sizes="32x32">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
-  <link rel="preload" href="data/books.json?v=025852bc99" as="fetch" crossorigin>
+  <link rel="preload" href="data/books.json?v=76f48641b0" as="fetch" crossorigin>
   <link rel="preload" href="fonts/anybody-latin.woff2" as="font" type="font/woff2" crossorigin>
   <style>
     @font-face {
@@ -933,10 +933,10 @@
     }
     const midrib = L => `M0 0Q${n1(L * .04)} ${n1(-L * .5)} 0 ${n1(-L * .95)}`;
 
-    function monsteraClump(x, y, height, rand, light, count = 6) {
+    function monsteraClump(x, y, height, rand, light, count = 6, spread = 1) {
       let stems = "", leaves = "";
       for (let i = 0; i < count; i++) {
-        const lean = (rand() - .5) * 110 + (i % 2 ? 12 : -12);
+        const lean = ((rand() - .5) * 110 + (i % 2 ? 12 : -12)) * spread;
         const len = height * (.45 + rand() * .5);
         const a = lean * Math.PI / 180;
         const ex = x + Math.sin(a) * len, ey = y - Math.cos(a) * len;
@@ -1074,7 +1074,7 @@
       let leaves = "";
       if (kind === "snake") leaves = snakePlant(cx, base - potH + 4, shelfH - potH - 4, rand);
       else if (kind === "pilea") leaves = pilea(cx, base - potH + 4, (shelfH - potH) * .9, rand);
-      else if (kind === "monstera") leaves = monsteraClump(cx, base - potH + 4, shelfH - potH, rand, .3, 4);
+      else if (kind === "monstera") leaves = monsteraClump(cx, base - potH + 4, (shelfH - potH) * .85, rand, .3, 4, .6);
       else {
         // Pothos spilling over the pot and down past the front of the plank.
         for (let i = 0; i < 4; i++) {
@@ -1084,10 +1084,12 @@
         leaves += vineCrown(cx, base - potH, potW, rand);
       }
       const potSvg = pot(cx, base, potW, potH, rand);
-      // Canvas runs past the plant's box so leaves can spread and vines can hang over the plank.
-      const padX = 70, below = shelfH * .8;
-      el.innerHTML = svgImage(kind === "trailing" ? potSvg + leaves : leaves + potSvg, -padX, 0, w + padX * 2, shelfH + below);
+      // Canvas runs past the plant's box so leaves can spread above and beside it,
+      // and vines can hang over the plank.
+      const padX = 100, above = shelfH * .45, below = shelfH * .8;
+      el.innerHTML = svgImage(kind === "trailing" ? potSvg + leaves : leaves + potSvg, -padX, -above, w + padX * 2, above + shelfH + below);
       el.firstChild.style.left = -padX + "px";
+      el.firstChild.style.top = -above + "px";
       return el;
     }
 
@@ -1733,7 +1735,7 @@
     // ---------- Boot ----------
     buildRoom();
     Promise.all([
-      fetch("data/books.json?v=025852bc99").then(r => r.json()),
+      fetch("data/books.json?v=76f48641b0").then(r => r.json()),
       document.fonts.load('600 16px Anybody').catch(() => {}),
     ]).then(([data]) => {
       books = data;
