@@ -31,6 +31,7 @@ AUTHOR_FIXES = {"The Lies of Locke Lamora": "Scott Lynch"}
 NO_LOOKUP = {"Harry Potter and the Methods of Rationality", "Significant Digits", "Do the Work"}
 # Open Library cover ids picked by hand where search returned a translation or a placeholder.
 COVER_OVERRIDES = {
+    "Foundation": 374166,
     "Mistborn": 14658160,
     "Consider Phlebas": 15160165,
     "Assassin's Apprentice": 15133628,

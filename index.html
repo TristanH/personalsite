@@ -6,7 +6,10 @@
   <title>Tristan Homsi's bookshelf</title>
   <meta name="description" content="Every book Tristan Homsi has finished, on one shelf, lit by how much he liked it.">
   <meta name="theme-color" content="#432230">
-  <link rel="preload" href="data/books.json?v=48866076c3" as="fetch" crossorigin>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="favicon.ico" sizes="32x32">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="preload" href="data/books.json?v=025852bc99" as="fetch" crossorigin>
   <link rel="preload" href="fonts/anybody-latin.woff2" as="font" type="font/woff2" crossorigin>
   <style>
     @font-face {
@@ -1730,7 +1733,7 @@
     // ---------- Boot ----------
     buildRoom();
     Promise.all([
-      fetch("data/books.json?v=48866076c3").then(r => r.json()),
+      fetch("data/books.json?v=025852bc99").then(r => r.json()),
       document.fonts.load('600 16px Anybody').catch(() => {}),
     ]).then(([data]) => {
       books = data;
