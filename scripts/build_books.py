@@ -2,7 +2,7 @@
 # requires-python = ">=3.11"
 # dependencies = ["pillow"]
 # ///
-"""Turn a Bookwise `books_list_books` export into data/books.json and covers/*.webp.
+"""Turn a Readwise Books `books_list_books` export into data/books.json and covers/*.webp.
 
 Usage: uv run scripts/build_books.py <export.json> <download-cache-dir>
 """
@@ -20,6 +20,9 @@ ROOT = Path(__file__).resolve().parent.parent
 COVER_DIR = ROOT / "covers"
 DATA_FILE = ROOT / "data" / "books.json"
 COVER_HEIGHT = 360
+# Library book id -> Readwise Books page id (readwise.io/books/<id>/). The MCP doesn't
+# return this id, so it was resolved once from each book's ISBN or a title search.
+READWISE_IDS = json.loads((Path(__file__).parent / "readwise_book_ids.json").read_text())
 
 # Catalog mismatches in the export.
 AUTHOR_FIXES = {"The Lies of Locke Lamora": "Scott Lynch"}
@@ -143,7 +146,7 @@ def main(export_path, cache_dir):
             "r": book.get("rating"),
             "d": (book.get("finished_reading_at") or "")[:10] or None,
             "p": product.get("page_count"),
-            "u": product.get("store_url"),
+            "u": f"https://readwise.io/books/{READWISE_IDS[str(book['id'])]}/" if str(book["id"]) in READWISE_IDS else None,
         }
         if subtitle:
             entry["s"] = subtitle

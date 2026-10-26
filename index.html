@@ -435,28 +435,6 @@
     }
     .empty.show { display: block; }
 
-    footer {
-      max-width: 1240px;
-      margin: 0 auto;
-      padding: 8px 32px 56px;
-      /* Full-bleed floorboards under the footer. */
-      background: var(--floor);
-      box-shadow: 0 0 0 100vmax var(--floor);
-      clip-path: inset(0 -100vmax);
-      display: flex;
-      flex-wrap: wrap;
-      gap: 18px 40px;
-      align-items: center;
-      justify-content: space-between;
-      color: var(--ink-dim);
-      font-size: 15px;
-      line-height: 1.5;
-    }
-    footer p { margin: 0; max-width: 46em; }
-    footer a { color: var(--ink); }
-    .seed-strip { display: flex; gap: 3px; }
-    .seed-strip i { width: 22px; height: 22px; border-radius: 50%; box-shadow: inset 0 0 0 1px rgb(255 255 255 / .12); }
-
     /* ---------- Detail ---------- */
     dialog {
       width: min(920px, calc(100vw - 32px));
@@ -722,7 +700,6 @@
       :root { --shelf-h: 150px; }
       header { padding: 32px 16px 0; }
       main { padding: 28px 8px 24px; }
-      footer { padding: 16px 16px 48px; }
       .books { padding: 0 8px; }
       .label { left: 8px; }
       .search { width: 100%; }
@@ -762,11 +739,6 @@
   <p class="empty" id="empty"></p>
 
   <div class="floor" id="floor" aria-hidden="true"></div>
-  <footer>
-    <p id="colophon"></p>
-    <div class="seed-strip" id="strip" aria-hidden="true"></div>
-  </footer>
-
   <dialog id="detail" aria-labelledby="d-title" tabindex="-1">
     <button class="close" type="button" data-close>Close</button>
     <div class="detail">
@@ -1552,7 +1524,7 @@
         a.href = book.u;
         a.target = "_blank";
         a.rel = "noopener";
-        a.textContent = "See it on Bookwise";
+        a.textContent = "See it on Readwise Books";
         factsEl.append(a);
       }
 
@@ -1621,17 +1593,6 @@
     });
     stage.addEventListener("pointercancel", () => { drag = null; });
     toggleBtn.addEventListener("click", () => { clearTimeout(openTimer); setOpen(!isOpen); });
-
-    // ---------- Footer ----------
-    document.getElementById("strip").innerHTML = chunks.map(c => `<i style="background:${c}"></i>`).join("");
-    const colophon = document.getElementById("colophon");
-    colophon.innerHTML = `Spine colors come from each book's cover. The room, every plant in it, the shelves, the lettering, the lamplight and the angle you see it from all come from one random seed, <span></span>. <a href="?seed=">Roll a new seed</a>. Reading data from Bookwise.`;
-    colophon.querySelector("span").textContent = `${SEED.slice(0, 6)}…${SEED.slice(-4)}`;
-    colophon.querySelector("a").addEventListener("click", e => {
-      e.preventDefault();
-      const fresh = Array.from(crypto.getRandomValues(new Uint8Array(32)), b => b.toString(16).padStart(2, "0")).join("");
-      location.search = "?seed=" + fresh;
-    });
 
     // ---------- Boot ----------
     buildRoom();
