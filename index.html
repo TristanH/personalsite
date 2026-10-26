@@ -1739,10 +1739,9 @@
       measureText();
 
       const pages = books.reduce((n, b) => n + (b.p || 0), 0);
-      const fives = books.filter(b => b.r === 5).length;
       document.getElementById("summary").innerHTML =
         `<strong>${books.length} books</strong> finished, more than ${(Math.floor(pages / 1000) * 1000).toLocaleString()} pages. ` +
-        `The better I rated a book, the more it <span class="glow-word">glows</span>. My favorites stand face-out. ${fives} got five stars.`;
+        `The better I rated a book, the more it <span class="glow-word">glows</span>.`;
 
       layout(true);
       let w = innerWidth, t;
