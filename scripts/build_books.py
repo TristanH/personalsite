@@ -7,6 +7,7 @@
 Usage: uv run scripts/build_books.py <export.json> <download-cache-dir>
 """
 
+import hashlib
 import json
 import re
 import sys
@@ -150,6 +151,9 @@ def main(export_path, cache_dir):
         }
         if subtitle:
             entry["s"] = subtitle
+        review = re.sub(r"\n{3,}", "\n\n", (book.get("review") or "").replace("\r\n", "\n")).strip()
+        if review:
+            entry["v"] = review
 
         cover_url = product.get("cover_url")
         if title in COVER_OVERRIDES:
@@ -172,7 +176,12 @@ def main(export_path, cache_dir):
         out.append(entry)
 
     out.sort(key=lambda b: (b["d"] or "0000", b["id"]), reverse=True)
-    DATA_FILE.write_text(json.dumps(out, separators=(",", ":"), ensure_ascii=False))
+    payload = json.dumps(out, separators=(",", ":"), ensure_ascii=False)
+    DATA_FILE.write_text(payload)
+    # Stamp the page's data URL with a content hash so browsers never serve a stale copy.
+    version = hashlib.sha1(payload.encode()).hexdigest()[:10]
+    index = ROOT / "index.html"
+    index.write_text(re.sub(r"data/books\.json(\?v=[0-9a-f]+)?", f"data/books.json?v={version}", index.read_text()))
     print(f"{len(out)} books, {sum('c' in b for b in out)} with covers -> {DATA_FILE.relative_to(ROOT)}")
 
 
