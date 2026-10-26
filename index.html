@@ -321,7 +321,21 @@
       line-height: 1;
       letter-spacing: .01em;
     }
-    .book.no-author .author { display: none; }
+    /* Text the shelf doesn't show stays in the page, invisible, so the browser's find can still land on it. */
+    .book.no-author .author { position: absolute; bottom: 10px; color: transparent; pointer-events: none; }
+    .findable {
+      position: absolute;
+      left: 0; right: 0; bottom: 6%;
+      z-index: 1;
+      padding: 0 6px;
+      overflow: hidden;
+      font-size: 11px;
+      line-height: 1.25;
+      text-align: center;
+      color: transparent;
+      pointer-events: none;
+    }
+    .findable span { display: block; }
     .book.two .title {
       white-space: normal;
       text-wrap: balance;
@@ -1236,7 +1250,12 @@
       const front = document.createElement("span");
       front.className = "front";
       if (book.c) {
-        front.append(coverImg(book, true));
+        const text = document.createElement("span");
+        text.className = "findable";
+        text.innerHTML = "<span></span><span></span>";
+        text.firstChild.textContent = book.t;
+        text.lastChild.textContent = book.a || "";
+        front.append(coverImg(book, true), text);
       } else {
         front.innerHTML = madeCover();
         front.querySelector("b").textContent = book.t;
