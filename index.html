@@ -318,6 +318,13 @@
       line-height: 1;
       letter-spacing: .01em;
     }
+    .book.no-author .author { display: none; }
+    .book.two .title {
+      white-space: normal;
+      text-wrap: balance;
+      text-overflow: clip;
+      line-height: 1.05;
+    }
     .book .author {
       position: relative;
       z-index: 1;
@@ -327,7 +334,7 @@
       overflow: hidden;
       max-height: 34%;
       text-overflow: ellipsis;
-      font-size: calc(var(--fs) * .72);
+      font-size: var(--afs);
       font-weight: 450;
       font-variation-settings: "wdth" 70;
       opacity: .78;
@@ -1227,6 +1234,51 @@
       el.querySelector(".lift").append(face);
     }
 
+    // Measure every title (and author) once at two letter widths. Length scales with font
+    // size, and close enough to linearly with the width axis, so each spine can then work out
+    // how to fit its own text without measuring again.
+    function measureText() {
+      const box = document.createElement("div");
+      box.style.cssText = "position:absolute;left:-9999px;top:0;visibility:hidden;contain:layout style;white-space:nowrap;font-family:Anybody,system-ui,sans-serif;font-size:100px;line-height:1;letter-spacing:.01em";
+      const spans = [];
+      for (const b of books) {
+        for (const [text, wd, weight, key] of [[b.t, 50, b.weight, "L50"], [b.t, 150, b.weight, "L150"], [lastName(b.a), 70, 450, "LA"]]) {
+          const span = document.createElement("span");
+          span.style.cssText = `display:block;width:max-content;font-weight:${weight};font-variation-settings:"wdth" ${wd}`;
+          span.textContent = text;
+          box.append(span);
+          spans.push([b, key, span]);
+        }
+      }
+      document.body.append(box);
+      for (const [b, key, span] of spans) b[key] = span.offsetWidth / 100;  // length per px of font size
+      box.remove();
+    }
+
+    // Fit a spine's title: narrow the letters first, then (on a thick spine) take two lines,
+    // then give up the author's name, and only then shrink. Past 8px the ellipsis takes over.
+    function fitTitle(b, w, h, showAuthor = !!b.a && b.thick >= 24) {  // as in spineEl
+      const afs = Math.min(w * .32, 11);
+      // A little slack: an exact fit can still tip into an ellipsis on subpixel rounding.
+      const avail = (h - 22 - (showAuthor ? Math.min(afs * b.LA, h * .34) + 8 : 0)) * .94;
+      const fs0 = clamp(w * .46, 9, 17);
+      const wd0 = clamp(50 + (w - 18) * 2.6, 50, 140);
+      const wdFor = (fs, room) => 50 + 100 * (room / fs - b.L50) / (b.L150 - b.L50);
+      const wd = Math.min(wd0, wdFor(fs0, avail));
+      const hideAuthor = !showAuthor;
+      if (wd >= 58) return { fs: fs0, wd, afs, two: false, hideAuthor };
+      const fs2 = Math.min(fs0, (w - 8) / 2.1);
+      if (fs2 >= 9 && b.t.includes(" ")) {
+        // Each line carries a bit over half the title once words break unevenly.
+        const wd2 = Math.min(wd0, wdFor(fs2, avail / .6));
+        if (wd2 >= 58) return { fs: fs2, wd: wd2, afs, two: true, hideAuthor };
+      }
+      const len58 = b.L50 + (b.L150 - b.L50) * .08;
+      const fs = Math.min(fs0, avail / len58);
+      if (fs < 10 && showAuthor) return fitTitle(b, w, h, false);
+      return { fs: Math.max(8, fs), wd: 58, afs, two: false, hideAuthor };
+    }
+
     function sizeBooks() {
       const shelfH = parseFloat(getComputedStyle(root).getPropertyValue("--shelf-h"));
       const scale = shelfH / 210;
@@ -1235,16 +1287,19 @@
         // Face-out books stand a touch shorter so the lean clears the shelf above.
         const h = Math.round(shelfH * (b.out ? .8 + (b.height - .8) * .5 : b.height));
         const w = b.out ? Math.round(h * b.ar) : thick;
-        const fs = clamp(w * .46, 9, 17);
-        // Thin spines get condensed lettering; fat ones get room to stretch.
-        const wd = Math.round(clamp(50 + (w - 18) * 2.6, 50, 140));
+        // Thin spines get condensed lettering; fat ones get room to stretch, as far as the title allows.
+        const fit = b.out ? { fs: clamp(w * .46, 9, 17), wd: 100, afs: 11, two: false } : fitTitle(b, w, h);
+        const { fs, wd, afs } = fit;
+        b.el.classList.toggle("two", fit.two);
+        b.el.classList.toggle("no-author", !!fit.hideAuthor);
         b.w = w;
         b.el.style.setProperty("--w", w + "px");
         b.el.style.setProperty("--h", h + "px");
         b.el.style.setProperty("--d", (b.out ? thick : Math.round(h * b.ar)) + "px");
         b.el.style.setProperty("--fs", fs.toFixed(1) + "px");
         b.el.style.setProperty("--fw", b.weight);
-        b.el.style.setProperty("--wd", wd);
+        b.el.style.setProperty("--wd", Math.round(wd));
+        b.el.style.setProperty("--afs", afs.toFixed(1) + "px");
       }
     }
 
@@ -1559,10 +1614,14 @@
 
     // ---------- Boot ----------
     buildRoom();
-    fetch("data/books.json").then(r => r.json()).then(data => {
+    Promise.all([
+      fetch("data/books.json").then(r => r.json()),
+      document.fonts.load('600 16px Anybody').catch(() => {}),
+    ]).then(([data]) => {
       books = data;
       books.forEach(decorate);
       books.forEach(bookEl);
+      measureText();
 
       const pages = books.reduce((n, b) => n + (b.p || 0), 0);
       const fives = books.filter(b => b.r === 5).length;
