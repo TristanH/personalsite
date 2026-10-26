@@ -321,21 +321,29 @@
       line-height: 1;
       letter-spacing: .01em;
     }
-    /* Text the shelf doesn't show stays in the page, invisible, so the browser's find can still land on it. */
-    .book.no-author .author { position: absolute; bottom: 10px; color: transparent; pointer-events: none; }
+    /* Text the shelf doesn't show is hidden="until-found": the browser's find can still match it,
+       and reveals it (as a caption on covers, or the author on a spine) when it does. */
+    .book .author[hidden] { margin: 0; }
     .findable {
       position: absolute;
-      left: 0; right: 0; bottom: 6%;
+      left: 6px; right: 6px; bottom: 6%;
       z-index: 1;
-      padding: 0 6px;
+      padding: 4px 6px;
       overflow: hidden;
+      border-radius: 3px;
+      background: rgb(30 14 20 / .85);
+      color: var(--ink);
       font-size: 11px;
       line-height: 1.25;
       text-align: center;
-      color: transparent;
       pointer-events: none;
     }
+    .findable[hidden] { padding: 0; background: none; }
     .findable span { display: block; }
+    .findable span + span { color: var(--ink-dim); }
+    /* Browsers without until-found: keep the text in the page, unseen. */
+    .no-reveal .findable { background: none; color: transparent; }
+    .no-reveal .findable span + span { color: transparent; }
     .book.two .title {
       white-space: normal;
       text-wrap: balance;
@@ -453,6 +461,11 @@
       }
     }
     .book:focus-visible { outline-offset: 4px; }
+    /* The book the browser's find just landed on steps forward off the shelf. */
+    .book.found .lift {
+      transform-origin: 50% 100%;
+      transform: translateZ(28px) translateY(-10px);
+    }
     .dimmed .book:not(.match) { opacity: .16; }
 
     .entering .book { animation: drop .7s cubic-bezier(.3, 1.35, .5, 1) backwards; animation-delay: calc(var(--i) * 9ms); }
@@ -1235,6 +1248,31 @@
       el.replaceChildren(lift);
     }
 
+    // Text the shelf leaves out stays findable with the browser's find (Cmd+F). With
+    // hidden="until-found" the browser reveals it on a match and tells us, so the book can step forward.
+    const canReveal = "onbeforematch" in document.documentElement;
+    document.documentElement.classList.toggle("no-reveal", !canReveal);
+    function hideForFind(el, hide = true) {
+      if (!hide) el.removeAttribute("hidden");
+      else if (canReveal) el.setAttribute("hidden", "until-found");
+      else if (!el.classList.contains("findable")) el.hidden = true;
+    }
+    let found = null;
+    function clearFound() {
+      if (!found) return;
+      found.book.classList.remove("found");
+      if (found.book.classList.contains("no-author") || found.el.classList.contains("findable")) hideForFind(found.el);
+      found = null;
+    }
+    document.addEventListener("beforematch", e => {
+      const book = e.target.closest(".book");
+      if (!book) return;
+      clearFound();
+      book.classList.add("found");
+      found = { book, el: e.target };
+    });
+    addEventListener("pointerdown", clearFound);
+
     function coverImg(book, lazy) {
       const img = document.createElement("img");
       img.alt = "";
@@ -1255,6 +1293,7 @@
         text.innerHTML = "<span></span><span></span>";
         text.firstChild.textContent = book.t;
         text.lastChild.textContent = book.a || "";
+        hideForFind(text);
         front.append(coverImg(book, true), text);
       } else {
         front.innerHTML = madeCover();
@@ -1353,6 +1392,8 @@
         const { fs, wd, afs } = fit;
         b.el.classList.toggle("two", fit.two);
         b.el.classList.toggle("no-author", !!fit.hideAuthor);
+        const author = b.el.querySelector(".author");
+        if (author) hideForFind(author, !!fit.hideAuthor);
         b.w = w;
         b.el.style.setProperty("--w", w + "px");
         b.el.style.setProperty("--h", h + "px");
