@@ -23,6 +23,7 @@
       --plank: hsl(37 42% 30%);
       --plank-top: hsl(41 38% 46%);
       --plank-dark: hsl(37 42% 13.5%);
+      --floor: hsl(37 32% 22%);
       --ink: hsl(30 75% 93%);
       --ink-dim: hsl(30 37% 80%);
       --glow: hsl(34 95% 62%);
@@ -49,16 +50,17 @@
       z-index: -1;
       pointer-events: none;
       contain: strict;
-      will-change: transform;
       /* A lamp in the top corner, limewash blotches, the corners falling off into evening. */
       background:
-        radial-gradient(60% 50% at 86% 4%, hsl(36 95% 70% / .38), transparent 70%),
+        radial-gradient(60% 50% at 86% 4%, hsl(36 95% 70% / .16), transparent 70%),
         radial-gradient(30% 25% at 20% 30%, rgb(255 240 220 / .05), transparent),
         radial-gradient(35% 30% at 60% 70%, rgb(0 0 0 / .06), transparent),
-        radial-gradient(140% 100% at 50% 20%, transparent 55%, rgb(20 5 0 / .35)),
+        radial-gradient(140% 100% at 50% 20%, transparent 60%, rgb(20 5 0 / .18)),
         radial-gradient(120% 80% at 30% 0%, color-mix(in oklab, var(--wall) 85%, hsl(36 90% 80%)) 0%, var(--wall) 50%, var(--wall-deep) 100%);
     }
-    .room img { position: absolute; left: 12px; top: 12px; }
+    .ceiling { position: absolute; top: 0; left: 0; right: 0; z-index: -1; pointer-events: none; }
+    .ceiling img, .floor img { display: block; }
+    .floor { margin-top: -60px; pointer-events: none; overflow: hidden; }
     .plant {
       position: relative;
       flex: none;
@@ -86,9 +88,9 @@
       align-items: baseline;
       gap: 0 .22em;
       margin: 0;
-      font-size: clamp(40px, 6.2vw, 84px);
+      font-size: clamp(34px, 4.6vw, 62px);
       line-height: .9;
-      font-weight: 850;
+      font-weight: 720;
       font-variation-settings: "wdth" 150;
       letter-spacing: -.035em;
       color: var(--ink);
@@ -283,7 +285,7 @@
       overflow: hidden;
       border-radius: 2px 2px 1px 1px;
       background: var(--bg);
-      box-shadow: 0 0 calc(var(--g) * 26px) calc(var(--g) * 2px) color-mix(in oklab, var(--glow) calc(var(--g) * 75%), transparent);
+      box-shadow: 0 0 calc(var(--g) * 16px) 0 color-mix(in oklab, var(--glow) calc(var(--g) * 42%), transparent);
     }
     .book .spine::after {
       /* Rounded-spine shading. */
@@ -352,7 +354,7 @@
       height: 34px;
       transform: translateX(-50%);
       pointer-events: none;
-      opacity: calc(var(--g) * .8);
+      opacity: calc(var(--g) * .4);
       /* No mix-blend-mode here: it flattens the book's 3D faces in Chrome. */
       background: radial-gradient(closest-side, color-mix(in oklab, var(--glow) 70%, transparent), transparent);
     }
@@ -385,7 +387,7 @@
       border-radius: 1px 3px 3px 1px;
       background: var(--bg);
       box-shadow:
-        0 0 calc(var(--g) * 30px) calc(var(--g) * 3px) color-mix(in oklab, var(--glow) calc(var(--g) * 75%), transparent),
+        0 0 calc(var(--g) * 18px) 0 color-mix(in oklab, var(--glow) calc(var(--g) * 42%), transparent),
         6px 10px 18px -6px rgb(0 0 0 / .6);
     }
     .front img {
@@ -436,7 +438,11 @@
     footer {
       max-width: 1240px;
       margin: 0 auto;
-      padding: 24px 32px 64px;
+      padding: 8px 32px 56px;
+      /* Full-bleed floorboards under the footer. */
+      background: var(--floor);
+      box-shadow: 0 0 0 100vmax var(--floor);
+      clip-path: inset(0 -100vmax);
       display: flex;
       flex-wrap: wrap;
       gap: 18px 40px;
@@ -733,6 +739,7 @@
 </head>
 <body>
   <div class="room" id="room" aria-hidden="true"></div>
+  <div class="ceiling" id="ceiling" aria-hidden="true"></div>
   <header>
     <h1>Tristan Homsi<span>has read these.</span></h1>
     <div class="intro">
@@ -754,6 +761,7 @@
   <main id="shelves" aria-label="Bookshelf"></main>
   <p class="empty" id="empty"></p>
 
+  <div class="floor" id="floor" aria-hidden="true"></div>
   <footer>
     <p id="colophon"></p>
     <div class="seed-strip" id="strip" aria-hidden="true"></div>
@@ -835,6 +843,7 @@
       "--plank": css(ph, plankS, plankL),
       "--plank-top": css(ph + 4, plankS * .9, plankL + .16),
       "--plank-dark": css(ph, plankS, plankL * .45),
+      "--floor": css(ph, .32, .22),
       "--ink": css(ih + 10, clamp(is, .35, .8), .93),
       "--ink-dim": css(ih + 10, clamp(is * .5, .15, .4), .8),
       "--glow": css(gh, .95, .62),
@@ -1102,43 +1111,49 @@
       return out + pot(x, drop, w, h, rand) + vines + vineCrown(x, top, w, rand);
     }
 
-    // The room behind the shelves: lamp light, a shaft of window light, leaf shadows,
-    // floor plants and hanging planters.
+    // The room is part of the page, not the screen: a ceiling with a hanging planter and the
+    // window's leaf shadows at the top, and the floor with standing plants at the very bottom.
+    // Only the plain wall stays fixed behind everything.
     function buildRoom() {
-      const W = innerWidth, H = innerHeight;
+      const W = document.documentElement.clientWidth;
       const rand = rng(SEED + "room");
       const margin = Math.max(0, (W - 1240) / 2);
+      const compact = W < 720;
       const [wh2, ws2] = hsl(chunks[6]);
-      const out = [];
-      out.push(`<defs><linearGradient id="sun" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="hsl(42 100% 80%)" stop-opacity=".16"/><stop offset=".75" stop-color="hsl(42 100% 80%)" stop-opacity="0"/></linearGradient></defs>`);
-      out.push(`<path d="M${n1(W * .02)} 0L${n1(W * .5)} 0L${n1(W * .9)} ${H}L${n1(W * .36)} ${H}Z" fill="url(#sun)"/>`);
-      // Soft shadows the window light throws of a plant out of frame.
+
+      // Ceiling: one screen tall, scrolls away with the header.
+      const H = Math.min(innerHeight, 820);
+      const top = [];
+      top.push(`<defs><linearGradient id="sun" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="hsl(42 100% 80%)" stop-opacity=".12"/><stop offset=".75" stop-color="hsl(42 100% 80%)" stop-opacity="0"/></linearGradient></defs>`);
+      top.push(`<path d="M${n1(W * .02)} 0L${n1(W * .5)} 0L${n1(W * .9)} ${H}L${n1(W * .36)} ${H}Z" fill="url(#sun)"/>`);
       let shadows = "";
       const shadowTone = { base: css(wh2 - 20, clamp(ws2, .2, .4), .1) };
-      for (let i = 0; i < 4; i++) {
+      for (let i = 0; i < 3; i++) {
         const L = Math.min(W, H) * (.22 + rand() * .12);
-        shadows += leafGroup(W * (.3 + rand() * .45), H * (.25 + rand() * .45), -30 + rand() * 80, monsteraLeaf(L, rand), shadowTone);
+        shadows += leafGroup(W * (.45 + rand() * .4), H * (.3 + rand() * .4), -30 + rand() * 80, monsteraLeaf(L, rand), shadowTone);
       }
-      out.push(`<g opacity=".16" transform="skewX(-14)">${shadows}</g>`);
-      // Floorboards along the bottom of the room.
-      const floorY = H - Math.min(70, H * .08);
+      top.push(`<g opacity=".06" transform="skewX(-14)">${shadows}</g>`);
+      roomSat = .38;
+      if (!compact && margin > 60) top.push(`<g opacity=".6">${hangingPlanter(margin * .45, H * .1, rand, .75)}</g>`);
+      document.getElementById("ceiling").innerHTML = svgImage(top.join(""), 0, 0, W, H);
+
+      // Floor: below the last shelf, plants standing on floorboards either side.
+      // Tall enough that the highest leaf clears the top of the canvas.
+      const plantH = compact ? 190 : 330;
+      const F = Math.round(plantH * 1.25 + (compact ? 120 : 150)), floorY = F - (compact ? 44 : 64);
+      const bottom = [];
       let boards = "";
-      for (let x = -40 + rand() * 40; x < W; x += 90 + rand() * 60) boards += `M${n1(x)} ${n1(floorY)}L${n1(x - 30)} ${H}`;
-      out.push(`<rect x="0" y="${n1(floorY)}" width="${W}" height="${n1(H - floorY)}" fill="${css(ph, .36, .2)}"/>` +
-        `<rect x="0" y="${n1(floorY)}" width="${W}" height="3" fill="${css(ph, .3, .32)}"/>` +
-        `<path d="${boards}" stroke="rgb(0 0 0 / .25)" stroke-width="1.5"/>`);
-      // On a phone the shelves fill the width, so the room's plants shrink back to the corners.
-      const compact = W < 720;
-      const plantH = compact ? H * .3 : Math.min(H * .72, 600);
-      roomSat = compact ? .55 : .7;
-      const leftX = compact ? 10 : margin * .35 + 50, rightX = compact ? W - 10 : W - margin * .35 - 50;
+      for (let x = -40 + rand() * 40; x < W; x += 90 + rand() * 60) boards += `M${n1(x)} ${n1(floorY)}L${n1(x - 30)} ${F}`;
+      bottom.push(`<rect x="0" y="${n1(floorY)}" width="${W}" height="${n1(F - floorY)}" fill="${css(ph, .32, .22)}"/>` +
+        `<rect x="0" y="${n1(floorY)}" width="${W}" height="3" fill="${css(ph, .28, .3)}"/>` +
+        `<path d="${boards}" stroke="rgb(0 0 0 / .22)" stroke-width="1.5"/>`);
       const potScale = compact ? .6 : 1;
-      out.push(monsteraClump(leftX, floorY - 70 * potScale, plantH, rand, .25, compact ? 5 : 9) + pot(leftX, floorY + 8, 140 * potScale, 92 * potScale, rand));
-      out.push(fernClump(rightX, floorY - 70 * potScale, plantH * .8, rand, .27, compact ? 6 : 9) + pot(rightX, floorY + 8, 120 * potScale, 86 * potScale, rand));
-      if (!compact) out.push(hangingPlanter(Math.max(40, margin * .45), H * (.16 + rand() * .06), rand));
-      out.push(hangingPlanter(W - Math.max(compact ? 24 : 40, margin * .5), H * (compact ? .06 : .1 + rand() * .06), rand, compact ? .45 : 1));
+      const leftX = compact ? 46 : Math.max(110, margin + 60), rightX = compact ? W - 46 : Math.min(W - 110, W - margin - 60);
+      const plants = monsteraClump(leftX, floorY - 70 * potScale, plantH, rand, .27, compact ? 5 : 8) + pot(leftX, floorY + 6, 140 * potScale, 92 * potScale, rand) +
+        fernClump(rightX, floorY - 70 * potScale, plantH * .8, rand, .29, compact ? 6 : 8) + pot(rightX, floorY + 6, 120 * potScale, 86 * potScale, rand);
+      bottom.push(`<g opacity=".75">${plants}</g>`);
       roomSat = 1;
-      document.getElementById("room").innerHTML = svgImage(out.join(""), 0, 0, W, H);
+      document.getElementById("floor").innerHTML = svgImage(bottom.join(""), 0, 0, W, F);
     }
 
     // ---------- Book geometry ----------
@@ -1436,17 +1451,6 @@
       btn.parentElement.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", b === btn));
       layout(true);
     }));
-
-    // ---------- Pointer parallax ----------
-    if (!reduceMotion && matchMedia("(hover: hover)").matches) {
-      // Only the room layer drifts, by a direct transform: one composited layer, no restyling.
-      const room = document.getElementById("room");
-      let raf = 0, target = 0;
-      addEventListener("pointermove", e => {
-        target = (e.clientX / innerWidth - .5) * -12;
-        if (!raf) raf = requestAnimationFrame(() => { raf = 0; room.style.transform = `translateX(${target.toFixed(1)}px)`; });
-      }, { passive: true });
-    }
 
     // ---------- Detail ----------
     const dialog = document.getElementById("detail");
