@@ -452,6 +452,8 @@
     .empty.show { display: block; }
 
     /* ---------- Detail ---------- */
+    /* --panel fades the dialog's surface without fading the book flying into it. */
+    @property --panel { syntax: "<number>"; inherits: true; initial-value: 1; }
     dialog {
       width: min(920px, calc(100vw - 32px));
       max-height: calc(100vh - 32px);
@@ -460,14 +462,31 @@
       border-radius: 6px;
       color: var(--ink);
       background:
-        radial-gradient(90% 90% at 25% 30%, color-mix(in oklab, var(--wall) 85%, white), var(--wall-deep));
-      box-shadow: 0 40px 120px rgb(0 0 0 / .6), inset 0 0 0 1px color-mix(in oklab, var(--ink) 14%, transparent);
+        radial-gradient(90% 90% at 25% 30%,
+          color-mix(in oklab, color-mix(in oklab, var(--wall) 85%, white) calc(var(--panel) * 100%), transparent),
+          color-mix(in oklab, var(--wall-deep) calc(var(--panel) * 100%), transparent));
+      box-shadow:
+        0 40px 120px rgb(0 0 0 / calc(var(--panel) * .6)),
+        inset 0 0 0 1px color-mix(in oklab, var(--ink) calc(var(--panel) * 14%), transparent);
       overflow: auto;
     }
+    /* While a book flies in from (or back to) the shelf it travels outside the panel. */
+    dialog.flying { overflow: visible; }
+    dialog.flying .stage::after { opacity: 0; }
+    dialog .info, dialog .close, dialog .stage::after { transition: opacity .3s ease; }
+    dialog.arriving { animation: panel-in .45s ease both; }
+    dialog.arriving .info, dialog.arriving .close { animation: fade-in .4s .3s ease both; }
+    dialog.leaving { animation: panel-out .35s ease .15s both; }
+    dialog.leaving .info, dialog.leaving .close { opacity: 0; transition-duration: .18s; }
+    dialog.arriving::backdrop { animation: fade-in .45s ease both; }
+    dialog.leaving::backdrop { animation: fade-in .45s ease reverse both; }
+    @keyframes panel-in { from { --panel: 0; } }
+    @keyframes panel-out { to { --panel: 0; } }
+    @keyframes fade-in { from { opacity: 0; } }
+    /* The book's slot on the shelf stays empty while it's off the shelf. */
+    .book.away { visibility: hidden; }
     dialog:focus-visible { outline: none; }
     dialog::backdrop { background: color-mix(in oklab, var(--wall-deep) 78%, transparent); }
-    dialog[open] { animation: rise .35s cubic-bezier(.2, .8, .2, 1); }
-    @keyframes rise { from { opacity: 0; transform: translateY(16px); } }
     .detail {
       display: grid;
       grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
@@ -612,6 +631,7 @@
     .info .by { margin: 16px 0 0; font-size: 19px; }
     .rating { margin-top: 30px; }
     .meter { display: flex; gap: 5px; }
+    .meter[hidden], .also[hidden], .sub[hidden] { display: none; }
     .meter i {
       position: relative;
       width: 36px;
@@ -1161,7 +1181,7 @@
       el.style.cssText = `--bg:${book.bg};--fg:${book.fg};--accent:${book.accent};--g:${glowOf(book.r).toFixed(2)};--rot:${book.rot}`;
       el.addEventListener("pointerenter", () => ensureFace(el, book));
       el.addEventListener("focus", () => ensureFace(el, book));
-      el.addEventListener("click", () => openDetail(book.id));
+      el.addEventListener("click", () => openDetail(book.id, true));
       book.el = el;
       return el;
     }
@@ -1478,7 +1498,7 @@
       return `<div class="made-cover"><b></b><i></i></div>`;
     }
 
-    function openDetail(id) {
+    function openDetail(id, fromShelf = false) {
       const book = books.find(b => b.id === id);
       current = book;
       const ch = innerWidth <= 720 ? 220 : 300;
@@ -1551,12 +1571,73 @@
         }));
       }
 
-      if (!dialog.open) { dialog.showModal(); dialog.focus(); }
-      // Arrive spine-on, then turn to show the cover.
+      // The book being looked at is off its shelf.
+      books.forEach(b => b.el.classList.toggle("away", b === book));
       stopCoast();
+      if (!dialog.open) {
+        dialog.showModal();
+        dialog.focus();
+        if (fromShelf && !reduceMotion && flyFromShelf(book)) return;
+        if (!reduceMotion) { dialog.classList.add("arriving"); setTimeout(() => dialog.classList.remove("arriving"), 800); }
+      }
+      // Moving between books in the panel: arrive spine-on, then turn to show the cover.
       if (reduceMotion) { setSpin(22, false); return; }
       setSpin(90, false);
       requestAnimationFrame(() => requestAnimationFrame(() => setSpin(22, true)));
+    }
+
+    // Where the book sits on the shelf, as a transform for the panel's book: offset from the
+    // stage's center, scaled down to shelf size, spine-on (or cover-on for face-out books).
+    function shelfPose(book) {
+      const from = book.el.getBoundingClientRect();
+      if (from.bottom < 0 || from.top > innerHeight || !from.width) return null;  // off screen
+      const stageBox = stage.getBoundingClientRect();
+      const dx = from.left + from.width / 2 - (stageBox.left + stageBox.width / 2);
+      const dy = from.top + from.height / 2 - (stageBox.top + stageBox.height / 2);
+      const s = from.height / parseFloat(big.style.getPropertyValue("--ch"));
+      return { dx, dy, s, rot: book.out ? 0 : 90, tilt: book.out ? 5 : 0 };
+    }
+
+    // Pull the book off the shelf: it slides forward out of its slot, then flies to the
+    // middle of the panel turning to show its cover, while the panel fades in around it.
+    function flyFromShelf(book) {
+      const p = shelfPose(book);
+      if (!p) return false;
+      dialog.classList.add("flying", "arriving");
+      setSpin(22, false);
+      // Each phase has its own easing: a quick tug out of the slot, then an unhurried glide.
+      const anim = big.animate([
+        { transform: `translate(${p.dx}px, ${p.dy}px) scale(${p.s}) rotateX(${p.tilt}deg) rotateY(${p.rot}deg)`, easing: "cubic-bezier(.3, 0, .3, 1)" },
+        { transform: `translate(${p.dx}px, ${p.dy - 18}px) scale(${p.s * 1.12}) rotateX(${p.tilt}deg) rotateY(${p.rot}deg)`, offset: .2, easing: "cubic-bezier(.45, 0, .2, 1)" },
+        { transform: "translate(0px, 0px) scale(1) rotateX(8deg) rotateY(22deg)" },
+      ], { duration: 950 });
+      anim.onfinish = anim.oncancel = () => {
+        dialog.classList.remove("flying", "arriving");
+      };
+      return true;
+    }
+
+    // Put the book back: it flies home into its slot and the panel fades away.
+    function closeDetail() {
+      if (!dialog.open || dialog.classList.contains("leaving")) return;
+      stopCoast();
+      const book = current;
+      const p = !reduceMotion && book && shelfPose(book);
+      const finish = () => {
+        dialog.classList.remove("flying", "leaving", "arriving");
+        dialog.close();
+        book?.el.classList.remove("away");
+      };
+      if (!p) { finish(); return; }
+      // Turn back the shorter way round, however far it's been spun.
+      const home = p.rot + 360 * Math.round((spin - p.rot) / 360);
+      dialog.classList.add("flying", "leaving");
+      const anim = big.animate([
+        { transform: `translate(0px, 0px) scale(1) rotateX(8deg) rotateY(${spin}deg)`, easing: "cubic-bezier(.5, 0, .25, 1)" },
+        { transform: `translate(${p.dx}px, ${p.dy - 18}px) scale(${p.s * 1.12}) rotateX(${p.tilt}deg) rotateY(${home}deg)`, offset: .78, easing: "cubic-bezier(.4, 0, .4, 1)" },
+        { transform: `translate(${p.dx}px, ${p.dy}px) scale(${p.s}) rotateX(${p.tilt}deg) rotateY(${home}deg)` },
+      ], { duration: 750, fill: "forwards" });
+      anim.onfinish = () => { finish(); anim.cancel(); };
     }
 
     function step(dir) {
@@ -1566,7 +1647,7 @@
     }
 
     dialog.addEventListener("click", e => {
-      if (e.target === dialog || e.target.closest("[data-close]")) dialog.close();
+      if (e.target === dialog || e.target.closest("[data-close]")) closeDetail();
       const s = e.target.closest("[data-step]");
       if (s) step(+s.dataset.step);
     });
@@ -1574,7 +1655,16 @@
       if (e.key === "ArrowRight") step(1);
       if (e.key === "ArrowLeft") step(-1);
     });
-    dialog.addEventListener("close", () => current?.el.focus({ preventScroll: true }));
+    // Escape closes through the same put-it-back animation.
+    dialog.addEventListener("cancel", e => { e.preventDefault(); closeDetail(); });
+    // Hand focus back to the book; only show the focus pose if the keyboard was in use.
+    let usingPointer = false;
+    addEventListener("pointerdown", () => { usingPointer = true; }, { capture: true, passive: true });
+    addEventListener("keydown", () => { usingPointer = false; }, { capture: true });
+    dialog.addEventListener("close", () => {
+      books.forEach(b => b.el.classList.remove("away"));
+      current?.el.focus({ preventScroll: true, focusVisible: !usingPointer });
+    });
 
     // Drag to turn. Let go mid-drag and the book keeps spinning, slowing under friction.
     let drag = null, coast = 0;
