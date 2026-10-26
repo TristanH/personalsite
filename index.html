@@ -487,20 +487,13 @@
       width: var(--cw);
       height: var(--ch);
       transform-style: preserve-3d;
-      transform: translateX(var(--shift, 0px)) rotateX(var(--tip, 8deg)) rotateY(var(--spin, 0deg));
+      transform: rotateX(8deg) rotateY(var(--spin, 0deg));
     }
     .big-book.turning { transition: transform 1.1s cubic-bezier(.2, .75, .15, 1); }
     .big-book .bf { position: absolute; backface-visibility: hidden; }
-    .big-book .b-hinge {
-      position: absolute;
-      inset: 0;
-      transform-style: preserve-3d;
-      transform-origin: left center;
-      transform: translateZ(calc(var(--t) / 2)) rotateY(var(--open, 0deg));
-      transition: transform 1.3s cubic-bezier(.35, .1, .2, 1);
-    }
     .big-book .b-cover {
       inset: 0;
+      transform: translateZ(calc(var(--t) / 2));
       border-radius: 1px 3px 3px 1px;
       background: var(--bg) center / cover no-repeat;
     }
@@ -510,33 +503,6 @@
       inset: 0;
       background: linear-gradient(90deg, rgb(0 0 0 / .4), rgb(255 255 255 / .16) 2.5%, rgb(0 0 0 / .1) 5%, transparent 10%, transparent 80%, rgb(0 0 0 / .12));
     }
-    .big-book .b-inside {
-      inset: 0;
-      transform: rotateY(180deg);
-      border-radius: 3px 1px 1px 3px;
-      background: var(--endpaper);
-      box-shadow: inset -14px 0 18px -10px rgb(0 0 0 / .45);
-    }
-    .big-book .b-page {
-      inset: 3px 5px 3px 1px;
-      transform: translateZ(calc(var(--t) / 2 - 1px));
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: calc(var(--cw) * .035);
-      padding: 10%;
-      text-align: center;
-      color: #3b2f22;
-      background:
-        linear-gradient(90deg, rgb(60 40 10 / .22), transparent 9%),
-        #f3ead6;
-    }
-    .b-page .ex { font-size: calc(var(--cw) * .045); font-variation-settings: "wdth" 110; letter-spacing: .04em; opacity: .65; margin-bottom: auto; }
-    .b-page .pt { font-size: calc(var(--cw) * .1); line-height: 1; font-weight: 800; font-variation-settings: "wdth" 115; letter-spacing: -.02em; overflow-wrap: anywhere; }
-    .b-page .pa { font-size: calc(var(--cw) * .06); font-variation-settings: "wdth" 90; }
-    .b-page .pr { font-size: calc(var(--cw) * .052); color: hsl(28 70% 38%); }
-    .b-page .pd { font-size: calc(var(--cw) * .045); opacity: .65; margin-top: auto; }
     .big-book .b-back {
       inset: 0;
       overflow: hidden;
@@ -694,7 +660,6 @@
     }
     .nav button:hover, .close:hover { background: color-mix(in oklab, var(--ink) 16%, transparent); }
     .close { position: absolute; top: 16px; right: 16px; z-index: 2; }
-    .hint { position: absolute; bottom: 0; left: 0; right: 0; text-align: center; font-size: 13px; color: var(--ink-dim); opacity: .8; }
 
     @media (max-width: 720px) {
       :root { --shelf-h: 150px; }
@@ -744,7 +709,6 @@
     <div class="detail">
       <div class="stage" id="stage">
         <div class="big-book" id="big"></div>
-        <span class="hint">Drag to turn it. Tap to open or close.</span>
       </div>
       <div class="info">
         <h2 id="d-title"></h2>
@@ -760,7 +724,6 @@
           <div></div>
         </section>
         <div class="nav">
-          <button type="button" id="d-open">Open the book</button>
           <button type="button" data-step="-1">Previous book</button>
           <button type="button" data-step="1">Next book</button>
         </div>
@@ -1428,37 +1391,13 @@
     const dialog = document.getElementById("detail");
     const big = document.getElementById("big");
     const stage = document.getElementById("stage");
-    const toggleBtn = document.getElementById("d-open");
     let current = null;
     let spin = 0;
-    let isOpen = false;
-    let openTimer = 0;
 
     function setSpin(deg, animate) {
       spin = deg;
       big.classList.toggle("turning", !!animate && !reduceMotion);
       big.style.setProperty("--spin", deg + "deg");
-    }
-
-    // Open: the cover swings round on its hinge and the book slides over so the spread is centered.
-    function setOpen(open) {
-      isOpen = open;
-      big.classList.toggle("turning", !reduceMotion);
-      big.style.setProperty("--open", open ? "-162deg" : "0deg");
-      big.style.setProperty("--shift", open ? "calc(var(--cw) * .5)" : "0px");
-      big.style.setProperty("--tip", open ? "16deg" : "8deg");
-      setSpin(open ? -6 : 24, true);
-      toggleBtn.textContent = open ? "Close the book" : "Open the book";
-    }
-
-    function endpaper(book) {
-      // A small repeat of leaves in two tones of the book's own color.
-      const [h] = hsl(book.bg);
-      const tile = 46;
-      const leaves = [[12, 14, -30], [34, 32, 140], [36, 8, 60], [10, 38, 200]]
-        .map(([x, y, a]) => `<path transform="translate(${x} ${y}) rotate(${a})" d="${heartLeaf(9, 6)}" fill="${css(h, .3, .5)}"/>`).join("");
-      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${tile}" height="${tile}"><rect width="${tile}" height="${tile}" fill="${css(h, .28, .3)}"/>${leaves}</svg>`;
-      return `url("data:image/svg+xml,${encodeURIComponent(svg)}") 0 0 / ${tile}px`;
     }
 
     function madeCover() {
@@ -1471,21 +1410,13 @@
       const ch = innerWidth <= 720 ? 220 : 300;
       const cw = Math.round(ch * book.ar);
       const t = Math.round(clamp(book.thick * (ch / 210) * .75, 16, 56));
-      big.style.cssText = `--cw:${cw}px;--ch:${ch}px;--t:${t}px;--bg:${book.bg};--fg:${book.fg};--endpaper:${endpaper(book)}`;
+      big.style.cssText = `--cw:${cw}px;--ch:${ch}px;--t:${t}px;--bg:${book.bg};--fg:${book.fg}`;
       big.innerHTML = `
         <div class="bf b-back"></div>
         <div class="bf b-spine"><span></span></div>
         <div class="bf b-edge"></div><div class="bf b-top"></div><div class="bf b-bottom"></div>
-        <div class="bf b-page">
-          <span class="ex">From the shelves of Tristan Homsi</span>
-          <b class="pt"></b><span class="pa"></span><span class="pr"></span><span class="pd"></span>
-        </div>
-        <div class="b-hinge"><div class="bf b-cover"></div><div class="bf b-inside"></div></div>`;
+        <div class="bf b-cover"></div>`;
       big.querySelector(".b-spine span").textContent = book.t;
-      big.querySelector(".pt").textContent = book.t;
-      big.querySelector(".pa").textContent = book.a || "";
-      big.querySelector(".pr").textContent = book.r == null ? "Not rated yet" : `${fmtRating(book.r)} out of 5`;
-      big.querySelector(".pd").textContent = book.d ? `Read ${new Date(book.d + "T12:00:00").toLocaleDateString("en-US", { month: "long", year: "numeric" })}` : "";
       const cover = big.querySelector(".b-cover");
       if (book.c) {
         cover.style.backgroundImage = `url(covers/${book.id}.webp)`;
@@ -1547,14 +1478,11 @@
       }
 
       if (!dialog.open) { dialog.showModal(); dialog.focus(); }
-      // Arrive spine-on, turn to the cover, then let the cover fall open.
-      clearTimeout(openTimer);
-      isOpen = false;
-      toggleBtn.textContent = "Open the book";
-      if (reduceMotion) { setOpen(true); return; }
+      // Arrive spine-on, then turn to show the cover.
+      stopCoast();
+      if (reduceMotion) { setSpin(22, false); return; }
       setSpin(90, false);
-      requestAnimationFrame(() => requestAnimationFrame(() => setSpin(24, true)));
-      openTimer = setTimeout(() => setOpen(true), 900);
+      requestAnimationFrame(() => requestAnimationFrame(() => setSpin(22, true)));
     }
 
     function step(dir) {
@@ -1574,25 +1502,41 @@
     });
     dialog.addEventListener("close", () => current?.el.focus({ preventScroll: true }));
 
-    // Drag to turn; a tap without dragging opens or closes the book.
-    let drag = null;
+    // Drag to turn. Let go mid-drag and the book keeps spinning, slowing under friction.
+    let drag = null, coast = 0;
+    const stopCoast = () => cancelAnimationFrame(coast);
     stage.addEventListener("pointerdown", e => {
-      drag = { x: e.clientX, start: spin, moved: false };
+      stopCoast();
+      drag = { x: e.clientX, start: spin, lastX: e.clientX, lastT: e.timeStamp, v: 0 };
       stage.setPointerCapture(e.pointerId);
+      big.classList.remove("turning");
     });
     stage.addEventListener("pointermove", e => {
       if (!drag) return;
-      const dx = e.clientX - drag.x;
-      if (!drag.moved && Math.abs(dx) < 5) return;
-      if (!drag.moved) { drag.moved = true; clearTimeout(openTimer); big.classList.remove("turning"); }
-      setSpin(drag.start + dx * .6, false);
+      const dt = e.timeStamp - drag.lastT;
+      if (dt > 0) drag.v = drag.v * .2 + ((e.clientX - drag.lastX) * .6 / dt) * .8;  // degrees per ms
+      drag.lastX = e.clientX;
+      drag.lastT = e.timeStamp;
+      setSpin(drag.start + (e.clientX - drag.x) * .6, false);
     });
-    stage.addEventListener("pointerup", () => {
-      if (drag && !drag.moved) { clearTimeout(openTimer); setOpen(!isOpen); }
+    const endDrag = e => {
+      if (!drag) return;
+      // A pause before letting go means no flick.
+      let v = e.timeStamp - drag.lastT > 80 ? 0 : clamp(drag.v, -2.5, 2.5);
       drag = null;
-    });
-    stage.addEventListener("pointercancel", () => { drag = null; });
-    toggleBtn.addEventListener("click", () => { clearTimeout(openTimer); setOpen(!isOpen); });
+      if (reduceMotion || Math.abs(v) < .02) return;
+      let last = performance.now();
+      const step = now => {
+        const dt = Math.min(now - last, 40);
+        last = now;
+        setSpin(spin + v * dt, false);
+        v *= Math.pow(.955, dt / 16.7);
+        if (Math.abs(v) > .005) coast = requestAnimationFrame(step);
+      };
+      coast = requestAnimationFrame(step);
+    };
+    stage.addEventListener("pointerup", endDrag);
+    stage.addEventListener("pointercancel", endDrag);
 
     // ---------- Boot ----------
     buildRoom();
