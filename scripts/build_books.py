@@ -25,13 +25,24 @@ COVER_HEIGHT = 360
 # return this id, so it was resolved once from each book's ISBN or a title search.
 READWISE_IDS = json.loads((Path(__file__).parent / "readwise_book_ids.json").read_text())
 
-# Catalog mismatches in the export.
-AUTHOR_FIXES = {"The Lies of Locke Lamora": "Scott Lynch"}
+# Catalog mismatches and messy imports in the export, keyed by cleaned title.
+AUTHOR_FIXES = {
+    "The Lies of Locke Lamora": "Scott Lynch",
+    "The Alchemist": "Paulo Coelho",
+    "The Now Habit": "Neil Fiore",
+}
+TITLE_FIXES = {
+    "The Alchemist (Paulo Coelho)": "The Alchemist",
+    "Power of Now": "The Power of Now",
+    "Tribe Of Mentors": "Tribe of Mentors",
+}
 # Fan fiction with no published edition, or no usable scan; these keep a generated cover.
 NO_LOOKUP = {"Harry Potter and the Methods of Rationality", "Significant Digits", "Do the Work"}
 # Open Library cover ids picked by hand where search returned a translation or a placeholder.
 COVER_OVERRIDES = {
     "Foundation": 374166,
+    "The Alchemist": 15091614,
+    "All Life is Problem Solving": 265025,
     "Mistborn": 14658160,
     "Consider Phlebas": 15160165,
     "Assassin's Apprentice": 15133628,
@@ -44,7 +55,9 @@ COVER_OVERRIDES = {
 
 def clean_title(raw):
     title = re.sub(r"\s+", " ", raw).strip()
-    title = re.sub(r"\s*\((?:[^)]*#\d+|Penguin Classics[^)]*|Aristillus[^)]*)\)", "", title)
+    title = re.sub(r"\s*\{[^}]*\}", "", title)
+    title = re.sub(r"\s*\((?:[^)]*#\d+|[^)]*Book \d+|Penguin Classics[^)]*|Aristillus[^)]*)\)", "", title)
+    title = TITLE_FIXES.get(title, title)
     title = re.sub(r"^Farseer \d - ", "", title)
     title = re.sub(r" - (Book Two in the Gentlemen Bastards Sequence|Revised 3rd Edition|Second Edition)$", "", title)
     title = re.sub(r": (A Novel|The Illustrated Edition|Second Edition)$", "", title)
