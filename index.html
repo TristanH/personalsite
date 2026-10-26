@@ -5,26 +5,30 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Tristan Homsi's bookshelf</title>
   <meta name="description" content="Every book Tristan Homsi has finished, on one shelf, lit by how much he liked it.">
-  <meta name="theme-color" content="#4a1f5c">
+  <meta name="theme-color" content="#432230">
   <link rel="preload" href="data/books.json" as="fetch" crossorigin>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Anybody:wdth,wght@50..150,300..900&display=swap" rel="stylesheet">
+  <link rel="preload" href="fonts/anybody-latin.woff2" as="font" type="font/woff2" crossorigin>
   <style>
+    @font-face {
+      font-family: Anybody;
+      src: url(fonts/anybody-latin.woff2) format("woff2");
+      font-weight: 100 900;
+      font-stretch: 50% 150%;
+      font-display: swap;
+    }
     :root {
       /* Overwritten from the seed in script; these are the defaults for seed 5e2673…3765. */
-      --wall: hsl(284 50% 26%);
-      --wall-deep: hsl(284 55% 14%);
-      --plank: hsl(220 90% 30%);
-      --plank-top: hsl(220 70% 42%);
-      --plank-dark: hsl(220 95% 14%);
-      --ink: hsl(20 75% 82%);
-      --ink-dim: hsl(20 35% 68%);
-      --glow: hsl(72 90% 55%);
+      --wall: hsl(344 27% 37%);
+      --wall-deep: hsl(344 31% 20%);
+      --plank: hsl(37 42% 30%);
+      --plank-top: hsl(41 38% 46%);
+      --plank-dark: hsl(37 42% 13.5%);
+      --ink: hsl(30 75% 93%);
+      --ink-dim: hsl(30 37% 80%);
+      --glow: hsl(34 95% 62%);
       --shelf-h: 210px;
       --tilt-x: -4deg;
       --tilt-y: -2deg;
-      --pan: 0deg;
       color-scheme: dark;
     }
     * { box-sizing: border-box; }
@@ -35,20 +39,39 @@
       color: var(--ink);
       font-family: Anybody, system-ui, sans-serif;
       font-variation-settings: "wdth" 100;
-      background:
-        radial-gradient(120% 70% at 30% 0%, color-mix(in oklab, var(--wall) 92%, white) 0%, var(--wall) 45%, var(--wall-deep) 100%) fixed;
       -webkit-font-smoothing: antialiased;
       overflow-x: hidden;
     }
-    body::before {
-      /* Plaster grain on the wall. */
-      content: "";
+
+    .room {
       position: fixed;
-      inset: 0;
+      inset: -12px;
+      z-index: -1;
       pointer-events: none;
-      opacity: .18;
-      mix-blend-mode: overlay;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      contain: strict;
+      will-change: transform;
+      /* A lamp in the top corner, limewash blotches, the corners falling off into evening. */
+      background:
+        radial-gradient(60% 50% at 86% 4%, hsl(36 95% 70% / .38), transparent 70%),
+        radial-gradient(30% 25% at 20% 30%, rgb(255 240 220 / .05), transparent),
+        radial-gradient(35% 30% at 60% 70%, rgb(0 0 0 / .06), transparent),
+        radial-gradient(140% 100% at 50% 20%, transparent 55%, rgb(20 5 0 / .35)),
+        radial-gradient(120% 80% at 30% 0%, color-mix(in oklab, var(--wall) 85%, hsl(36 90% 80%)) 0%, var(--wall) 50%, var(--wall-deep) 100%);
+    }
+    .room img { position: absolute; left: 12px; top: 12px; }
+    .plant {
+      position: relative;
+      flex: none;
+      /* Nudged forward so trailing vines hang in front of the plank, not behind it. */
+      transform: translateZ(6px);
+    }
+    .plant img { position: absolute; top: 0; max-width: none; }
+    /* Each shelf skips layout and paint until it's near the viewport. The clip margin
+       leaves room for vines, glow and books pulled off the shelf. */
+    .shelf {
+      content-visibility: auto;
+      contain-intrinsic-size: auto 300px;
+      overflow-clip-margin: 160px;
     }
 
     header {
@@ -161,7 +184,7 @@
     .row {
       position: relative;
       transform-style: preserve-3d;
-      transform: perspective(1500px) rotateX(var(--tilt-x)) rotateY(calc(var(--tilt-y) + var(--pan)));
+      transform: perspective(1500px) rotateX(var(--tilt-x)) rotateY(var(--tilt-y));
       margin-bottom: 30px;
     }
     .books {
@@ -181,7 +204,9 @@
       position: relative;
       height: 22px;
       transform-style: preserve-3d;
-      background: linear-gradient(180deg, var(--plank-top) 0%, var(--plank) 18%, var(--plank) 70%, var(--plank-dark) 100%);
+      background:
+        repeating-linear-gradient(90deg, rgb(0 0 0 / .07) 0 1px, transparent 1px 23px, rgb(255 230 190 / .05) 23px 25px, transparent 25px 41px),
+        linear-gradient(180deg, var(--plank-top) 0%, var(--plank) 18%, var(--plank) 70%, var(--plank-dark) 100%);
       border-radius: 1px 1px 3px 3px;
       box-shadow:
         0 22px 30px -10px rgb(0 0 0 / .55),
@@ -196,6 +221,7 @@
       transform-origin: bottom;
       transform: rotateX(90deg);
       background:
+        repeating-linear-gradient(90deg, rgb(0 0 0 / .06) 0 1px, transparent 1px 31px, rgb(255 230 190 / .05) 31px 33px, transparent 33px 57px),
         linear-gradient(0deg, var(--plank-top), color-mix(in oklab, var(--plank) 70%, black) 90%);
     }
     .label {
@@ -233,10 +259,18 @@
       border: 0;
       cursor: pointer;
       transform-style: preserve-3d;
-      transition: transform .32s cubic-bezier(.2, .8, .2, 1), opacity .25s;
+      transition: opacity .25s;
       background: none;
       font: inherit;
       color: var(--fg);
+    }
+    /* Everything visible moves on this inner layer; the button itself never moves,
+       so the hover target stays put and a lifting book can't slide out from under the pointer. */
+    .book .lift {
+      position: absolute;
+      inset: 0;
+      transform-style: preserve-3d;
+      transition: transform .32s cubic-bezier(.2, .8, .2, 1);
     }
     .book .spine {
       position: absolute;
@@ -296,7 +330,7 @@
       font-variation-settings: "wdth" 70;
       opacity: .78;
     }
-    .book::before {
+    .book .lift::before {
       /* Top edge: page block between two boards. */
       content: "";
       position: absolute;
@@ -340,7 +374,7 @@
       background: linear-gradient(90deg, rgb(0 0 0 / .35), rgb(0 0 0 / 0) 18%);
     }
     /* Face-out: cover to the room, leaning back against the wall. */
-    .book.out {
+    .book.out .lift {
       transform-origin: 50% 100%;
       transform: rotateX(5deg);
     }
@@ -374,12 +408,12 @@
     .front .made-cover i { font-size: 11px; }
     @media (hover: hover) {
       /* Pull the book off the shelf and swing its cover round to face the room. */
-      .book:hover, .book:focus-visible {
+      .book:hover .lift, .book:focus-visible .lift {
         transform-origin: 0 100%;
         transform: translateZ(64px) translateY(-14px) rotateY(-60deg);
-        z-index: 2;
       }
-      .book.out:hover, .book.out:focus-visible {
+      .book.out:hover .lift, .book.out:focus-visible .lift {
+        transform-origin: 50% 100%;
         transform: translateZ(28px) translateY(-8px) rotateX(0deg);
       }
     }
@@ -458,40 +492,101 @@
       background: radial-gradient(closest-side, rgb(0 0 0 / .5), transparent);
       pointer-events: none;
     }
+    /* The book in hand, cover facing you: x runs across the cover from the spine,
+       z is its thickness. --cw/--ch size the cover, --t the thickness. */
     .big-book {
-      --bw: 40px;
-      --bh: 360px;
-      --bd: 240px;
+      --cw: 200px;
+      --ch: 300px;
+      --t: 40px;
       position: relative;
       z-index: 1;
-      width: var(--bw);
-      height: var(--bh);
+      width: var(--cw);
+      height: var(--ch);
       transform-style: preserve-3d;
-      transform: rotateX(-8deg) rotateY(var(--spin, 0deg));
+      transform: translateX(var(--shift, 0px)) rotateX(var(--tip, 8deg)) rotateY(var(--spin, 0deg));
     }
     .big-book.turning { transition: transform 1.1s cubic-bezier(.2, .75, .15, 1); }
-    .big-book > div {
+    .big-book .bf { position: absolute; backface-visibility: hidden; }
+    .big-book .b-hinge {
       position: absolute;
-      backface-visibility: hidden;
+      inset: 0;
+      transform-style: preserve-3d;
+      transform-origin: left center;
+      transform: translateZ(calc(var(--t) / 2)) rotateY(var(--open, 0deg));
+      transition: transform 1.3s cubic-bezier(.35, .1, .2, 1);
+    }
+    .big-book .b-cover {
+      inset: 0;
+      border-radius: 1px 3px 3px 1px;
+      background: var(--bg) center / cover no-repeat;
+    }
+    .big-book .b-cover::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, rgb(0 0 0 / .4), rgb(255 255 255 / .16) 2.5%, rgb(0 0 0 / .1) 5%, transparent 10%, transparent 80%, rgb(0 0 0 / .12));
+    }
+    .big-book .b-inside {
+      inset: 0;
+      transform: rotateY(180deg);
+      border-radius: 3px 1px 1px 3px;
+      background: var(--endpaper);
+      box-shadow: inset -14px 0 18px -10px rgb(0 0 0 / .45);
+    }
+    .big-book .b-page {
+      inset: 3px 5px 3px 1px;
+      transform: translateZ(calc(var(--t) / 2 - 1px));
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: calc(var(--cw) * .035);
+      padding: 10%;
+      text-align: center;
+      color: #3b2f22;
+      background:
+        linear-gradient(90deg, rgb(60 40 10 / .22), transparent 9%),
+        #f3ead6;
+    }
+    .b-page .ex { font-size: calc(var(--cw) * .045); font-variation-settings: "wdth" 110; letter-spacing: .04em; opacity: .65; margin-bottom: auto; }
+    .b-page .pt { font-size: calc(var(--cw) * .1); line-height: 1; font-weight: 800; font-variation-settings: "wdth" 115; letter-spacing: -.02em; overflow-wrap: anywhere; }
+    .b-page .pa { font-size: calc(var(--cw) * .06); font-variation-settings: "wdth" 90; }
+    .b-page .pr { font-size: calc(var(--cw) * .052); color: hsl(28 70% 38%); }
+    .b-page .pd { font-size: calc(var(--cw) * .045); opacity: .65; margin-top: auto; }
+    .big-book .b-back {
+      inset: 0;
+      overflow: hidden;
+      transform: translateZ(calc(var(--t) / -2)) rotateY(180deg);
+      background: var(--bg) center / cover no-repeat;
+    }
+    .big-book .b-back::before {
+      /* Wraparound art: the front cover, knocked back. */
+      content: "";
+      position: absolute;
+      inset: -20px;
+      background: inherit;
+      filter: blur(10px) brightness(.45) saturate(.9);
     }
     .big-book .b-spine {
-      inset: 0;
-      transform: translateZ(calc(var(--bd) / 2));
-      background: var(--bg);
+      top: 0;
+      left: calc(var(--t) / -2);
+      width: var(--t);
+      height: 100%;
+      transform: rotateY(-90deg);
       display: grid;
       place-items: center;
       overflow: hidden;
+      background: var(--bg);
     }
-    .big-book .b-spine::after, .big-book .b-cover::after {
+    .big-book .b-spine::after {
       content: "";
       position: absolute;
       inset: 0;
       background: linear-gradient(90deg, rgb(0 0 0 / .4), rgb(255 255 255 / .12) 25%, rgb(0 0 0 / 0) 55%, rgb(0 0 0 / .35));
     }
-    .big-book .b-cover::after { background: linear-gradient(90deg, rgb(0 0 0 / .45), rgb(255 255 255 / .08) 6%, rgb(0 0 0 / 0) 20%, rgb(0 0 0 / .1)); }
     .big-book .b-spine span {
       writing-mode: vertical-rl;
-      font-size: 22px;
+      font-size: clamp(11px, calc(var(--t) * .42), 20px);
       font-weight: 750;
       font-variation-settings: "wdth" 70;
       white-space: nowrap;
@@ -500,38 +595,23 @@
       text-overflow: ellipsis;
       color: var(--fg);
     }
-    .big-book .b-cover, .big-book .b-back {
-      top: 0;
-      left: calc(50% - var(--bd) / 2);
-      width: var(--bd);
-      height: 100%;
-      background: var(--bg) center / cover no-repeat;
-    }
-    .big-book .b-cover { transform: rotateY(90deg) translateZ(calc(var(--bw) / 2)); }
-    .big-book .b-back { transform: rotateY(-90deg) translateZ(calc(var(--bw) / 2)) scaleX(-1); overflow: hidden; }
-    .big-book .b-back::before {
-      /* Wraparound art: the front cover, mirrored and knocked back. */
-      content: "";
-      position: absolute;
-      inset: -20px;
-      background: inherit;
-      filter: blur(10px) brightness(.45) saturate(.9);
+    .big-book .b-edge {
+      /* Fore-edge: the stacked page ends opposite the spine. */
+      top: 3px;
+      height: calc(100% - 6px);
+      left: calc(var(--cw) - var(--t) / 2 - 5px);
+      width: calc(var(--t) - 2px);
+      transform: rotateY(90deg);
+      background: repeating-linear-gradient(90deg, #efe5cd 0 1px, #d8caa9 1px 2px);
     }
     .big-book .b-top, .big-book .b-bottom {
-      left: 0;
-      top: calc(50% - var(--bd) / 2);
-      width: 100%;
-      height: var(--bd);
-      background: linear-gradient(90deg, var(--bg) 0 3px, #e7dcc3 3px calc(100% - 3px), var(--bg) calc(100% - 3px));
+      left: 1px;
+      width: calc(100% - 6px);
+      height: calc(var(--t) - 2px);
+      background: repeating-linear-gradient(0deg, #efe5cd 0 1px, #d8caa9 1px 2px);
     }
-    .big-book .b-top { transform: rotateX(90deg) translateZ(calc(var(--bh) / 2)); }
-    .big-book .b-bottom { transform: rotateX(-90deg) translateZ(calc(var(--bh) / 2)); filter: brightness(.5); }
-    .big-book .b-pages {
-      top: 0;
-      left: calc(50% - var(--bd) / 2);
-      width: var(--bd);
-      height: 100%;
-    }
+    .big-book .b-top { top: calc(var(--t) / -2 + 1px); transform: rotateX(90deg); }
+    .big-book .b-bottom { top: calc(var(--ch) - var(--t) / 2 + 1px); transform: rotateX(-90deg); filter: brightness(.6); }
     .made-cover {
       position: absolute;
       inset: 0;
@@ -610,6 +690,7 @@
     .also .front { box-shadow: 0 0 calc(var(--g) * 14px) color-mix(in oklab, var(--glow) calc(var(--g) * 70%), transparent), 0 6px 12px -4px rgb(0 0 0 / .6); }
     .nav {
       display: flex;
+      flex-wrap: wrap;
       gap: 10px;
       margin-top: auto;
       padding-top: 28px;
@@ -642,7 +723,7 @@
       .controls { width: 100%; }
       .detail { grid-template-columns: 1fr; padding: 20px 18px 22px; gap: 4px; }
       .stage { min-height: 300px; margin-bottom: 14px; }
-      .big-book { --bh: 250px; }
+
       .info { padding-top: 0; }
     }
     @media (prefers-reduced-motion: reduce) {
@@ -651,6 +732,7 @@
   </style>
 </head>
 <body>
+  <div class="room" id="room" aria-hidden="true"></div>
   <header>
     <h1>Tristan Homsi<span>has read these.</span></h1>
     <div class="intro">
@@ -677,12 +759,12 @@
     <div class="seed-strip" id="strip" aria-hidden="true"></div>
   </footer>
 
-  <dialog id="detail" aria-labelledby="d-title">
+  <dialog id="detail" aria-labelledby="d-title" tabindex="-1">
     <button class="close" type="button" data-close>Close</button>
     <div class="detail">
       <div class="stage" id="stage">
         <div class="big-book" id="big"></div>
-        <span class="hint">Drag to turn the book</span>
+        <span class="hint">Drag to turn it. Tap to open or close.</span>
       </div>
       <div class="info">
         <h2 id="d-title"></h2>
@@ -698,6 +780,7 @@
           <div></div>
         </section>
         <div class="nav">
+          <button type="button" id="d-open">Open the book</button>
           <button type="button" data-step="-1">Previous book</button>
           <button type="button" data-step="1">Next book</button>
         </div>
@@ -737,27 +820,28 @@
     }
 
     // ---------- Palette and camera from the seed ----------
-    // Chunk 0 is the wall, 1 the planks, 2 the lettering, 5 the light that ratings cast.
-    // Hues come straight from the seed; lightness is clamped so any seed stays legible.
-    const [wh, ws, wl] = hsl(chunks[0]);
-    const [ph, ps, pl] = hsl(chunks[1]);
+    // Chunk 6 is the plaster wall, 9 the wood of the shelves and floor, 2 the lettering and
+    // the lamplight that ratings cast. Hues come straight from the seed, pulled toward warm,
+    // lived-in ranges; lightness is clamped so any seed stays legible.
+    const [wh, ws, wl] = hsl(chunks[6]);
+    const ph = 15 + hsl(chunks[9])[0] % 25;
     const [ih, is] = hsl(chunks[2]);
-    const [gh, gs] = hsl(chunks[5]);
-    const wallL = clamp(wl, .2, .3), wallS = clamp(ws, .28, .6);
-    const plankL = clamp(pl, .24, .34), plankS = clamp(ps, .45, .92);
+    const gh = clamp(hsl(chunks[2])[0] + 14, 28, 44);
+    const wallL = clamp(wl, .33, .37), wallS = clamp(ws, .18, .32);
+    const plankL = .3, plankS = .42;
     Object.entries({
       "--wall": css(wh, wallS, wallL),
-      "--wall-deep": css(wh, clamp(wallS + .05, 0, .7), wallL * .5),
+      "--wall-deep": css(wh, clamp(wallS + .04, 0, .5), wallL * .55),
       "--plank": css(ph, plankS, plankL),
-      "--plank-top": css(ph, plankS * .8, plankL + .14),
+      "--plank-top": css(ph + 4, plankS * .9, plankL + .16),
       "--plank-dark": css(ph, plankS, plankL * .45),
-      "--ink": css(ih, clamp(is, .35, .8), .84),
-      "--ink-dim": css(ih, clamp(is * .5, .15, .4), .7),
-      "--glow": css(gh, clamp(gs, .8, 1), .56),
+      "--ink": css(ih + 10, clamp(is, .35, .8), .93),
+      "--ink-dim": css(ih + 10, clamp(is * .5, .15, .4), .8),
+      "--glow": css(gh, .95, .62),
       "--tilt-x": `${-(7 + bytes[30] / 255 * 6).toFixed(2)}deg`,
       "--tilt-y": `${(bytes[31] / 255 * 6 - 3).toFixed(2)}deg`,
     }).forEach(([k, v]) => root.style.setProperty(k, v));
-    document.querySelector('meta[name="theme-color"]').content = css(wh, wallS, wallL * .5);
+    document.querySelector('meta[name="theme-color"]').content = css(wh, wallS, wallL * .55);
     // The other six chunks dress books that have no cover image.
     const spareColors = [3, 4, 6, 7, 8, 9].map(i => chunks[i]);
 
@@ -772,6 +856,289 @@
         h = Math.imul(h ^ h >>> 13, 3266489909);
         return ((h ^= h >>> 16) >>> 0) / 4294967296;
       };
+    }
+
+    // ---------- Plants ----------
+    // Every leaf is drawn here from the seed: same seed, same plants.
+    // Leaves take their hues from chunks 5, 7 and 8, nudged into warm, leafy greens.
+    const leafHues = [5, 7, 8].map(i => clamp(hsl(chunks[i])[0], 75, 135));
+    const potTones = [2, 6, 7, 3].map(i => hsl(chunks[i]));
+    const n1 = v => v.toFixed(1);
+    // Drawn as an <img>: one node to style and lay out, rasterized once.
+    const HALF = `<defs><clipPath id="half"><rect x="-4000" y="-4000" width="4000" height="8000"/></clipPath></defs>`;
+    function svgImage(markup, x, y, w, h) {
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${n1(w)}" height="${n1(h)}" viewBox="${n1(x)} ${n1(y)} ${n1(w)} ${n1(h)}">${HALF}${markup}</svg>`;
+      return `<img alt="" decoding="async" width="${Math.round(w)}" height="${Math.round(h)}" src="data:image/svg+xml,${encodeURIComponent(svg)}">`;
+    }
+    const pick = (rand, list) => list[Math.floor(rand() * list.length)];
+
+    // Background plants pass a lower `sat` so they sit back behind the shelf.
+    let roomSat = 1;
+    function leafTone(rand, light) {
+      const h = pick(rand, leafHues) + rand() * 12 - 6, s = (.34 + rand() * .26) * roomSat, l = light + rand() * .07;
+      return { base: css(h, s, l), lit: css(h - 5, s + .06, l + .09), vein: css(h - 10, s * .7, l + .24) };
+    }
+
+    // Leaf outlines, drawn with the stem at 0,0 and the tip at 0,-L.
+    function heartLeaf(L, W) {
+      return `M0 0C${n1(W * .35)} ${n1(L * .12)} ${n1(W * 1.1)} ${n1(L * .02)} ${n1(W * .95)} ${n1(-L * .32)}` +
+        `C${n1(W * .8)} ${n1(-L * .65)} ${n1(W * .25)} ${n1(-L * .85)} 0 ${n1(-L)}` +
+        `C${n1(-W * .25)} ${n1(-L * .85)} ${n1(-W * .8)} ${n1(-L * .65)} ${n1(-W * .95)} ${n1(-L * .32)}` +
+        `C${n1(-W * 1.1)} ${n1(L * .02)} ${n1(-W * .35)} ${n1(L * .12)} 0 0Z`;
+    }
+    function bladeLeaf(L, W) {
+      return `M0 0C${n1(W * .9)} ${n1(-L * .08)} ${n1(W * 1.05)} ${n1(-L * .62)} 0 ${n1(-L)}` +
+        `C${n1(-W * 1.05)} ${n1(-L * .62)} ${n1(-W * .9)} ${n1(-L * .08)} 0 0Z`;
+    }
+    function smoothPath(pts) {
+      let d = `M${n1(pts[0][0])} ${n1(pts[0][1])}`;
+      for (let i = 1; i < pts.length - 1; i++) {
+        const [x, y] = pts[i], [nx, ny] = pts[i + 1];
+        d += `Q${n1(x)} ${n1(y)} ${n1((x + nx) / 2)} ${n1((y + ny) / 2)}`;
+      }
+      return d + "Z";
+    }
+    function monsteraLeaf(L, rand) {
+      // Heart outline traced around a center point, with slits cut toward the midrib
+      // and a few holes punched beside it (even-odd fill).
+      const cy = -.3 * L;
+      const r = p => L * (.3 + .4 * p ** 1.4 + .28 * Math.sin(Math.PI * p) ** .8);
+      const at = (p, k = 1) => { const a = Math.PI * p, rr = r(p) * k; return [rr * Math.sin(a), cy + rr * Math.cos(a)]; };
+      const slits = Array.from({ length: 3 + Math.floor(rand() * 4) }, (_, k) => .16 + (k + .3 + rand() * .4) * .7 / 6);
+      const right = [];
+      const N = 34;
+      for (let i = 0; i <= N; i++) {
+        const p = i / N;
+        right.push(at(p));
+        for (const s of slits) if (s >= p && s < p + 1 / N) right.push(at(s, .14 + rand() * .12), at(s + .014));
+      }
+      const pts = [...right, ...right.slice(1, -1).reverse().map(([x, y]) => [-x, y])];
+      let d = smoothPath(pts);
+      for (const s of slits) {
+        if (rand() < .45) continue;
+        const [hx, hy] = at(s + .05, .42);
+        const rx = L * .03 + rand() * L * .02, ry = rx * 1.8;
+        for (const x of [hx, -hx]) d += `M${n1(x - rx)} ${n1(hy)}a${n1(rx)} ${n1(ry)} 0 1 0 ${n1(rx * 2)} 0a${n1(rx)} ${n1(ry)} 0 1 0 ${n1(-rx * 2)} 0Z`;
+      }
+      return d;
+    }
+
+    // One leaf: the lamp-side half a shade lighter than the other, plus a soft midrib.
+    function leafGroup(x, y, angle, d, tone, vein, flip = 1) {
+      return `<g transform="translate(${n1(x)} ${n1(y)}) rotate(${n1(angle)}) scale(${flip} 1)">` +
+        `<path d="${d}" fill="${tone.base}" fill-rule="evenodd"/>` +
+        (tone.lit ? `<path d="${d}" fill="${tone.lit}" fill-rule="evenodd" clip-path="url(#half)"/>` : "") +
+        (vein ? `<path d="${vein}" fill="none" stroke="${tone.vein}" stroke-opacity=".45" stroke-width="1.1"/>` : "") + `</g>`;
+    }
+    const midrib = L => `M0 0Q${n1(L * .04)} ${n1(-L * .5)} 0 ${n1(-L * .95)}`;
+
+    function monsteraClump(x, y, height, rand, light, count = 6) {
+      let stems = "", leaves = "";
+      for (let i = 0; i < count; i++) {
+        const lean = (rand() - .5) * 110 + (i % 2 ? 12 : -12);
+        const len = height * (.45 + rand() * .5);
+        const a = lean * Math.PI / 180;
+        const ex = x + Math.sin(a) * len, ey = y - Math.cos(a) * len;
+        stems += `M${n1(x)} ${n1(y)}Q${n1(x + Math.sin(a) * len * .2)} ${n1(y - len * .7)} ${n1(ex)} ${n1(ey)}`;
+        const L = height * (.22 + rand() * .14);
+        leaves += leafGroup(ex, ey, lean * .8 + (rand() - .5) * 30, monsteraLeaf(L, rand), leafTone(rand, light), midrib(L), rand() < .5 ? -1 : 1);
+      }
+      return `<path d="${stems}" fill="none" stroke="${leafTone(rand, light).base}" stroke-width="${n1(height * .012 + 1)}" stroke-linecap="round"/>` + leaves;
+    }
+
+    function fernClump(x, y, height, rand, light, count = 7) {
+      let out = "";
+      for (let i = 0; i < count; i++) {
+        const side = i % 2 ? 1 : -1;
+        const len = height * (.55 + rand() * .45);
+        const spread = (.15 + rand() * .55) * side;
+        // Arching frond: rises, then droops at the tip.
+        const p0 = [x, y], p1 = [x + spread * len * .5, y - len * .95], p2 = [x + spread * len * 1.05, y - len * (.35 + rand() * .3)];
+        const bez = t => [(1 - t) ** 2 * p0[0] + 2 * (1 - t) * t * p1[0] + t * t * p2[0], (1 - t) ** 2 * p0[1] + 2 * (1 - t) * t * p1[1] + t * t * p2[1]];
+        const lit = [], shade = [];
+        for (let t = .12; t < .98; t += .035) {
+          const [bx, by] = bez(t), [nx, ny] = bez(t + .01);
+          const ang = Math.atan2(ny - by, nx - bx);
+          const size = len * .16 * Math.sin(Math.PI * Math.min(1, t * 1.15)) + 3;
+          for (const s of [-1, 1]) {
+            const a = ang + s * 1.15;
+            const tx = bx + Math.cos(a) * size, ty = by + Math.sin(a) * size;
+            const w = size * .22, px = -Math.sin(a) * w, py = Math.cos(a) * w;
+            const mx = bx + Math.cos(a) * size * .45, my = by + Math.sin(a) * size * .45;
+            // Leaflets facing up catch the lamp; the ones facing down sit in shade.
+            (ty < by ? lit : shade).push(`M${n1(bx)} ${n1(by)}Q${n1(mx + px)} ${n1(my + py)} ${n1(tx)} ${n1(ty)}Q${n1(mx - px)} ${n1(my - py)} ${n1(bx)} ${n1(by)}Z`);
+          }
+        }
+        const tone = leafTone(rand, light);
+        out += `<path d="M${n1(p0[0])} ${n1(p0[1])}Q${n1(p1[0])} ${n1(p1[1])} ${n1(p2[0])} ${n1(p2[1])}" fill="none" stroke="${tone.base}" stroke-width="1.6"/>` +
+          `<path d="${shade.join("")}" fill="${tone.base}"/><path d="${lit.join("")}" fill="${tone.lit}"/>`;
+      }
+      return out;
+    }
+
+    function vine(x, y, length, rand, light, drift = 0) {
+      // A pothos strand falling from x,y.
+      const amp = 6 + rand() * 10, period = 30 + rand() * 30, phase = rand() * 6;
+      const pt = t => [x + amp * Math.sin(t / period + phase) + drift * t, y + t];
+      let stem = `M${n1(x)} ${n1(y)}`;
+      for (let t = 4; t <= length; t += 4) { const [px, py] = pt(t); stem += `L${n1(px)} ${n1(py)}`; }
+      let leaves = "", side = rand() < .5 ? 1 : -1;
+      for (let t = 10 + rand() * 8; t < length; t += 13 + rand() * 8) {
+        const [px, py] = pt(t);
+        const L = 13 + rand() * 11 * (1 - t / length * .4);
+        leaves += leafGroup(px, py, 180 + side * (30 + rand() * 45), heartLeaf(L, L * .62), leafTone(rand, light + .04), `M0 0L0 ${n1(-L * .9)}`);
+        side = -side;
+      }
+      return `<path d="${stem}" fill="none" stroke="${leafTone(rand, light - .02).base}" stroke-width="1.3"/>` + leaves;
+    }
+
+    // Pots: glazed belly pots, plain clay, and woven baskets.
+    function pot(cx, base, w, h, rand) {
+      const kind = pick(rand, ["belly", "clay", "basket"]);
+      if (kind === "basket") {
+        const body = css(34, .38, .5 + rand() * .08), bw = w * .86;
+        let weave = "";
+        for (let y = base - h + 5; y < base - 2; y += 5) {
+          const off = ((y - base) / 5) % 2 ? 0 : 3;
+          weave += `<path d="M${n1(cx - w / 2 + 2)} ${n1(y)}L${n1(cx + w / 2 - 2)} ${n1(y)}" stroke="rgb(60 35 10 / .28)" stroke-width="1.6" stroke-dasharray="3 3" stroke-dashoffset="${off}"/>`;
+        }
+        return `<path d="M${n1(cx - w / 2)} ${n1(base - h)}L${n1(cx + w / 2)} ${n1(base - h)}L${n1(cx + bw / 2)} ${n1(base)}L${n1(cx - bw / 2)} ${n1(base)}Z" fill="${body}"/>` + weave +
+          `<rect x="${n1(cx - w / 2 - 1)}" y="${n1(base - h - 2)}" width="${n1(w + 2)}" height="5" rx="2.5" fill="${css(32, .4, .42)}"/>` +
+          `<path d="M${n1(cx + w * .08)} ${n1(base - h)}L${n1(cx + w / 2)} ${n1(base - h)}L${n1(cx + bw / 2)} ${n1(base)}L${n1(cx + bw * .08)} ${n1(base)}Z" fill="rgb(40 20 0 / .16)"/>`;
+      }
+      const [ph2, ps2, pl2] = pick(rand, potTones);
+      const body = css(ph2, clamp(ps2, .12, .38) * roomSat, clamp(pl2, .52, .7));
+      if (kind === "belly") {
+        const t = base - h;
+        return `<path d="M${n1(cx - w * .42)} ${n1(t)}C${n1(cx - w * .62)} ${n1(t + h * .45)} ${n1(cx - w * .5)} ${n1(base)} ${n1(cx - w * .28)} ${n1(base)}L${n1(cx + w * .28)} ${n1(base)}C${n1(cx + w * .5)} ${n1(base)} ${n1(cx + w * .62)} ${n1(t + h * .45)} ${n1(cx + w * .42)} ${n1(t)}Z" fill="${body}"/>` +
+          `<path d="M${n1(cx + w * .1)} ${n1(t)}L${n1(cx + w * .42)} ${n1(t)}C${n1(cx + w * .62)} ${n1(t + h * .45)} ${n1(cx + w * .5)} ${n1(base)} ${n1(cx + w * .28)} ${n1(base)}L${n1(cx + w * .1)} ${n1(base)}Z" fill="rgb(0 0 0 / .14)"/>` +
+          `<ellipse cx="${n1(cx - w * .22)}" cy="${n1(t + h * .38)}" rx="${n1(w * .06)}" ry="${n1(h * .2)}" fill="rgb(255 255 255 / .22)"/>` +
+          `<rect x="${n1(cx - w * .45)}" y="${n1(t - 3)}" width="${n1(w * .9)}" height="5" rx="2.5" fill="${body}"/>`;
+      }
+      const rimH = h * .18, bw = w * .76;
+      return `<path d="M${n1(cx - w / 2)} ${n1(base - h + rimH)}L${n1(cx + w / 2)} ${n1(base - h + rimH)}L${n1(cx + bw / 2)} ${n1(base)}L${n1(cx - bw / 2)} ${n1(base)}Z" fill="${body}"/>` +
+        `<path d="M${n1(cx + w * .05)} ${n1(base - h + rimH)}L${n1(cx + w / 2)} ${n1(base - h + rimH)}L${n1(cx + bw / 2)} ${n1(base)}L${n1(cx + bw * .05)} ${n1(base)}Z" fill="rgb(0 0 0 / .16)"/>` +
+        `<rect x="${n1(cx - w / 2 - 2)}" y="${n1(base - h)}" width="${n1(w + 4)}" height="${n1(rimH)}" rx="1.5" fill="${body}"/>` +
+        `<rect x="${n1(cx - w / 2 - 2)}" y="${n1(base - h + rimH - 2)}" width="${n1(w + 4)}" height="2" fill="rgb(0 0 0 / .2)"/>`;
+    }
+
+    function snakePlant(cx, base, h, rand) {
+      let out = "";
+      const edge = css(leafHues[0] - 15, .65, .66);
+      const n = 5 + Math.floor(rand() * 3);
+      for (let i = 0; i < n; i++) {
+        const L = h * (.55 + rand() * .45), W = 6 + rand() * 4;
+        const x = cx + (i - n / 2) * 5 + rand() * 4;
+        const tone = leafTone(rand, .26);
+        out += `<g transform="translate(${n1(x)} ${n1(base)}) rotate(${n1((i - n / 2) * 5 + (rand() - .5) * 8)})">` +
+          `<path d="${bladeLeaf(L, W)}" fill="${tone.base}" stroke="${edge}" stroke-width="1.4"/>` +
+          `<path d="${bladeLeaf(L, W)}" fill="${tone.lit}" clip-path="url(#half)"/>` +
+          `<path d="M0 ${n1(-L * .2)}L0 ${n1(-L * .8)}" stroke="rgb(255 255 255 / .12)" stroke-width="${n1(W * .5)}" stroke-dasharray="3 7"/></g>`;
+      }
+      return out;
+    }
+
+    function pilea(cx, base, h, rand) {
+      let stems = "", coins = "";
+      const n = 9 + Math.floor(rand() * 6);
+      for (let i = 0; i < n; i++) {
+        const a = (-80 + 160 * (i + rand() * .6) / n) * Math.PI / 180;
+        const len = h * (.45 + rand() * .5);
+        const ex = cx + Math.sin(a) * len * .8, ey = base - Math.cos(a) * len;
+        stems += `M${n1(cx)} ${n1(base)}Q${n1(cx + Math.sin(a) * len * .2)} ${n1(base - len * .6)} ${n1(ex)} ${n1(ey)}`;
+        const r = 5 + rand() * 6, tone = leafTone(rand, .36);
+        coins += `<circle cx="${n1(ex)}" cy="${n1(ey)}" r="${n1(r)}" fill="${tone.base}"/><circle cx="${n1(ex - r * .2)}" cy="${n1(ey - r * .2)}" r="${n1(r * .7)}" fill="${tone.lit}"/><circle cx="${n1(ex)}" cy="${n1(ey)}" r="1.2" fill="${tone.vein}"/>`;
+      }
+      return `<path d="${stems}" fill="none" stroke="${leafTone(rand, .32).base}" stroke-width="1.2"/>` + coins;
+    }
+
+    function vineCrown(cx, top, w, rand) {
+      let out = "";
+      for (let i = 0; i < 7; i++) {
+        const x = cx + (rand() - .5) * w, L = 14 + rand() * 9;
+        out += leafGroup(x, top + 2, (rand() - .5) * 120, heartLeaf(L, L * .62), leafTone(rand, .32), `M0 0L0 ${n1(-L * .9)}`);
+      }
+      return out;
+    }
+
+    // A potted plant sized to sit in the slack at the end of a shelf.
+    function shelfPlant(rand, w, shelfH) {
+      const el = document.createElement("div");
+      el.className = "plant";
+      el.style.width = w + "px";
+      el.style.height = shelfH + "px";
+      const cx = w / 2, base = shelfH;
+      const potW = Math.min(w * .62, 64), potH = potW * .82;
+      const kind = pick(rand, ["snake", "pilea", "trailing", "trailing", "monstera"]);
+      let leaves = "";
+      if (kind === "snake") leaves = snakePlant(cx, base - potH + 4, shelfH - potH - 4, rand);
+      else if (kind === "pilea") leaves = pilea(cx, base - potH + 4, (shelfH - potH) * .9, rand);
+      else if (kind === "monstera") leaves = monsteraClump(cx, base - potH + 4, shelfH - potH, rand, .3, 4);
+      else {
+        // Pothos spilling over the pot and down past the front of the plank.
+        for (let i = 0; i < 4; i++) {
+          const sx = cx + (rand() - .5) * potW * .8;
+          leaves += vine(sx, base - potH, potH + 30 + rand() * shelfH * .55, rand, .28, (sx - cx) * .004 + (rand() - .5) * .08);
+        }
+        leaves += vineCrown(cx, base - potH, potW, rand);
+      }
+      const potSvg = pot(cx, base, potW, potH, rand);
+      // Canvas runs past the plant's box so leaves can spread and vines can hang over the plank.
+      const padX = 70, below = shelfH * .8;
+      el.innerHTML = svgImage(kind === "trailing" ? potSvg + leaves : leaves + potSvg, -padX, 0, w + padX * 2, shelfH + below);
+      el.firstChild.style.left = -padX + "px";
+      return el;
+    }
+
+    function hangingPlanter(x, drop, rand, reach = 1) {
+      // A pot slung from the ceiling on three cords, pothos tumbling out of it.
+      const w = 58 * Math.min(1, reach + .3), h = 46 * Math.min(1, reach + .3), top = drop - h;
+      let out = `<path d="M${n1(x)} 0L${n1(x - w * .45)} ${n1(top)}M${n1(x)} 0L${n1(x + w * .45)} ${n1(top)}M${n1(x)} 0L${n1(x + w * .05)} ${n1(top)}" stroke="${css(34, .3, .62)}" stroke-width="1.2"/>`;
+      let vines = "";
+      for (let i = 0; i < 5; i++) {
+        const sx = x + (rand() - .5) * w * .8;
+        vines += vine(sx, top, (120 + rand() * 260) * reach, rand, .3, (sx - x) * .003);
+      }
+      return out + pot(x, drop, w, h, rand) + vines + vineCrown(x, top, w, rand);
+    }
+
+    // The room behind the shelves: lamp light, a shaft of window light, leaf shadows,
+    // floor plants and hanging planters.
+    function buildRoom() {
+      const W = innerWidth, H = innerHeight;
+      const rand = rng(SEED + "room");
+      const margin = Math.max(0, (W - 1240) / 2);
+      const [wh2, ws2] = hsl(chunks[6]);
+      const out = [];
+      out.push(`<defs><linearGradient id="sun" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="hsl(42 100% 80%)" stop-opacity=".16"/><stop offset=".75" stop-color="hsl(42 100% 80%)" stop-opacity="0"/></linearGradient></defs>`);
+      out.push(`<path d="M${n1(W * .02)} 0L${n1(W * .5)} 0L${n1(W * .9)} ${H}L${n1(W * .36)} ${H}Z" fill="url(#sun)"/>`);
+      // Soft shadows the window light throws of a plant out of frame.
+      let shadows = "";
+      const shadowTone = { base: css(wh2 - 20, clamp(ws2, .2, .4), .1) };
+      for (let i = 0; i < 4; i++) {
+        const L = Math.min(W, H) * (.22 + rand() * .12);
+        shadows += leafGroup(W * (.3 + rand() * .45), H * (.25 + rand() * .45), -30 + rand() * 80, monsteraLeaf(L, rand), shadowTone);
+      }
+      out.push(`<g opacity=".16" transform="skewX(-14)">${shadows}</g>`);
+      // Floorboards along the bottom of the room.
+      const floorY = H - Math.min(70, H * .08);
+      let boards = "";
+      for (let x = -40 + rand() * 40; x < W; x += 90 + rand() * 60) boards += `M${n1(x)} ${n1(floorY)}L${n1(x - 30)} ${H}`;
+      out.push(`<rect x="0" y="${n1(floorY)}" width="${W}" height="${n1(H - floorY)}" fill="${css(ph, .36, .2)}"/>` +
+        `<rect x="0" y="${n1(floorY)}" width="${W}" height="3" fill="${css(ph, .3, .32)}"/>` +
+        `<path d="${boards}" stroke="rgb(0 0 0 / .25)" stroke-width="1.5"/>`);
+      // On a phone the shelves fill the width, so the room's plants shrink back to the corners.
+      const compact = W < 720;
+      const plantH = compact ? H * .3 : Math.min(H * .72, 600);
+      roomSat = compact ? .55 : .7;
+      const leftX = compact ? 10 : margin * .35 + 50, rightX = compact ? W - 10 : W - margin * .35 - 50;
+      const potScale = compact ? .6 : 1;
+      out.push(monsteraClump(leftX, floorY - 70 * potScale, plantH, rand, .25, compact ? 5 : 9) + pot(leftX, floorY + 8, 140 * potScale, 92 * potScale, rand));
+      out.push(fernClump(rightX, floorY - 70 * potScale, plantH * .8, rand, .27, compact ? 6 : 9) + pot(rightX, floorY + 8, 120 * potScale, 86 * potScale, rand));
+      if (!compact) out.push(hangingPlanter(Math.max(40, margin * .45), H * (.16 + rand() * .06), rand));
+      out.push(hangingPlanter(W - Math.max(compact ? 24 : 40, margin * .5), H * (compact ? .06 : .1 + rand() * .06), rand, compact ? .45 : 1));
+      roomSat = 1;
+      document.getElementById("room").innerHTML = svgImage(out.join(""), 0, 0, W, H);
     }
 
     // ---------- Book geometry ----------
@@ -839,7 +1206,10 @@
       const el = book.el;
       book.out = isOut(book);
       el.classList.toggle("out", book.out);
-      el.replaceChildren(book.out ? frontEl(book) : spineEl(book));
+      const lift = document.createElement("span");
+      lift.className = "lift";
+      lift.append(book.out ? frontEl(book) : spineEl(book));
+      el.replaceChildren(lift);
     }
 
     function frontEl(book) {
@@ -888,7 +1258,7 @@
       const face = document.createElement("span");
       face.className = "face";
       if (book.c) face.style.backgroundImage = `url(covers/${book.id}.webp)`;
-      el.append(face);
+      el.querySelector(".lift").append(face);
     }
 
     function sizeBooks() {
@@ -959,12 +1329,13 @@
       return rows;
     }
 
-    function shelfRow(list, labelText, aisle) {
+    function shelfRow(list, labelText, aisle, plants) {
       const row = document.createElement("div");
       row.className = "row";
       const holder = document.createElement("div");
       holder.className = "books";
       holder.append(...list.map(b => b.el));
+      for (const p of plants) p.atStart ? holder.prepend(p.el) : holder.append(p.el);
       const plank = document.createElement("div");
       plank.className = "plank";
       if (labelText) {
@@ -976,7 +1347,10 @@
         row.classList.add("has-label");
       }
       row.append(holder, plank);
-      return row;
+      const shelf = document.createElement("div");
+      shelf.className = "shelf";
+      shelf.append(row);
+      return shelf;
     }
 
     function layout(animate) {
@@ -984,6 +1358,7 @@
       sizeBooks();
       // Leave slack for perspective, which magnifies the far ends of each shelf.
       const avail = (shelves.clientWidth - (innerWidth <= 720 ? 16 : 28)) * .96;
+      const shelfH = parseFloat(getComputedStyle(root).getPropertyValue("--shelf-h"));
       const frag = document.createDocumentFragment();
       order = [];
       let i = 0;
@@ -999,16 +1374,25 @@
           heading.querySelector("small").textContent = `${g.list.length} ${g.list.length === 1 ? "book" : "books"}`;
           group.append(heading);
         }
-        for (const list of splitRows(g.list, avail)) {
+        // Hold back room on each shelf for a plant, then pot one into most of the gaps.
+        splitRows(g.list, avail - Math.round(shelfH * .55)).forEach((list, r) => {
           list.forEach(b => { b.el.style.setProperty("--i", i++); order.push(b); });
+          const rand = rng(SEED + mode + view + g.name + r);
+          let slack = avail - list.reduce((n, b) => n + b.w + GAP, 0);
+          const plants = [];
+          while (slack >= 64 && plants.length < 2 && (rand() < .75 || slack > 220)) {
+            const w = Math.round(Math.min(slack - 10, shelfH * (.5 + rand() * .3)));
+            plants.push({ el: shelfPlant(rand, w, shelfH), atStart: rand() < .25 });
+            slack -= w + 10;
+          }
           if (g.aisle) {
             // Aisle signs: the authors each plank runs between.
             const first = lastName(list[0].a), last = lastName(list[list.length - 1].a);
-            group.append(shelfRow(list, first === last ? first : `${first} to ${last}`, true));
+            group.append(shelfRow(list, first === last ? first : `${first} to ${last}`, true, plants));
           } else {
-            group.append(shelfRow(list, "", false));
+            group.append(shelfRow(list, "", false, plants));
           }
-        }
+        });
         frag.append(group);
       }
       shelves.replaceChildren(frag);
@@ -1055,10 +1439,12 @@
 
     // ---------- Pointer parallax ----------
     if (!reduceMotion && matchMedia("(hover: hover)").matches) {
+      // Only the room layer drifts, by a direct transform: one composited layer, no restyling.
+      const room = document.getElementById("room");
       let raf = 0, target = 0;
       addEventListener("pointermove", e => {
-        target = (e.clientX / innerWidth - .5) * 5;
-        if (!raf) raf = requestAnimationFrame(() => { raf = 0; root.style.setProperty("--pan", target.toFixed(2) + "deg"); });
+        target = (e.clientX / innerWidth - .5) * -12;
+        if (!raf) raf = requestAnimationFrame(() => { raf = 0; room.style.transform = `translateX(${target.toFixed(1)}px)`; });
       }, { passive: true });
     }
 
@@ -1066,13 +1452,37 @@
     const dialog = document.getElementById("detail");
     const big = document.getElementById("big");
     const stage = document.getElementById("stage");
+    const toggleBtn = document.getElementById("d-open");
     let current = null;
     let spin = 0;
+    let isOpen = false;
+    let openTimer = 0;
 
     function setSpin(deg, animate) {
       spin = deg;
       big.classList.toggle("turning", !!animate && !reduceMotion);
       big.style.setProperty("--spin", deg + "deg");
+    }
+
+    // Open: the cover swings round on its hinge and the book slides over so the spread is centered.
+    function setOpen(open) {
+      isOpen = open;
+      big.classList.toggle("turning", !reduceMotion);
+      big.style.setProperty("--open", open ? "-162deg" : "0deg");
+      big.style.setProperty("--shift", open ? "calc(var(--cw) * .5)" : "0px");
+      big.style.setProperty("--tip", open ? "16deg" : "8deg");
+      setSpin(open ? -6 : 24, true);
+      toggleBtn.textContent = open ? "Close the book" : "Open the book";
+    }
+
+    function endpaper(book) {
+      // A small repeat of leaves in two tones of the book's own color.
+      const [h] = hsl(book.bg);
+      const tile = 46;
+      const leaves = [[12, 14, -30], [34, 32, 140], [36, 8, 60], [10, 38, 200]]
+        .map(([x, y, a]) => `<path transform="translate(${x} ${y}) rotate(${a})" d="${heartLeaf(9, 6)}" fill="${css(h, .3, .5)}"/>`).join("");
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${tile}" height="${tile}"><rect width="${tile}" height="${tile}" fill="${css(h, .28, .3)}"/>${leaves}</svg>`;
+      return `url("data:image/svg+xml,${encodeURIComponent(svg)}") 0 0 / ${tile}px`;
     }
 
     function madeCover() {
@@ -1082,16 +1492,24 @@
     function openDetail(id) {
       const book = books.find(b => b.id === id);
       current = book;
-      const isMobile = innerWidth <= 720;
-      const bh = isMobile ? 250 : 360;
-      const bw = Math.round(book.thick * (bh / 210) * .9);
-      const bd = Math.round(bh * book.ar);
-      big.style.cssText = `--bw:${bw}px;--bh:${bh}px;--bd:${bd}px;--bg:${book.bg};--fg:${book.fg}`;
+      const ch = innerWidth <= 720 ? 220 : 300;
+      const cw = Math.round(ch * book.ar);
+      const t = Math.round(clamp(book.thick * (ch / 210) * .75, 16, 56));
+      big.style.cssText = `--cw:${cw}px;--ch:${ch}px;--t:${t}px;--bg:${book.bg};--fg:${book.fg};--endpaper:${endpaper(book)}`;
       big.innerHTML = `
-        <div class="b-cover"></div><div class="b-back"></div>
-        <div class="b-top"></div><div class="b-bottom"></div>
-        <div class="b-spine"><span></span></div>`;
+        <div class="bf b-back"></div>
+        <div class="bf b-spine"><span></span></div>
+        <div class="bf b-edge"></div><div class="bf b-top"></div><div class="bf b-bottom"></div>
+        <div class="bf b-page">
+          <span class="ex">From the shelves of Tristan Homsi</span>
+          <b class="pt"></b><span class="pa"></span><span class="pr"></span><span class="pd"></span>
+        </div>
+        <div class="b-hinge"><div class="bf b-cover"></div><div class="bf b-inside"></div></div>`;
       big.querySelector(".b-spine span").textContent = book.t;
+      big.querySelector(".pt").textContent = book.t;
+      big.querySelector(".pa").textContent = book.a || "";
+      big.querySelector(".pr").textContent = book.r == null ? "Not rated yet" : `${fmtRating(book.r)} out of 5`;
+      big.querySelector(".pd").textContent = book.d ? `Read ${new Date(book.d + "T12:00:00").toLocaleDateString("en-US", { month: "long", year: "numeric" })}` : "";
       const cover = big.querySelector(".b-cover");
       if (book.c) {
         cover.style.backgroundImage = `url(covers/${book.id}.webp)`;
@@ -1152,10 +1570,15 @@
         }));
       }
 
-      if (!dialog.open) dialog.showModal();
-      // Start spine-on, then turn to show the cover.
-      setSpin(0, false);
-      requestAnimationFrame(() => requestAnimationFrame(() => setSpin(-62, true)));
+      if (!dialog.open) { dialog.showModal(); dialog.focus(); }
+      // Arrive spine-on, turn to the cover, then let the cover fall open.
+      clearTimeout(openTimer);
+      isOpen = false;
+      toggleBtn.textContent = "Open the book";
+      if (reduceMotion) { setOpen(true); return; }
+      setSpin(90, false);
+      requestAnimationFrame(() => requestAnimationFrame(() => setSpin(24, true)));
+      openTimer = setTimeout(() => setOpen(true), 900);
     }
 
     function step(dir) {
@@ -1175,25 +1598,30 @@
     });
     dialog.addEventListener("close", () => current?.el.focus({ preventScroll: true }));
 
-    // Drag to turn.
+    // Drag to turn; a tap without dragging opens or closes the book.
     let drag = null;
     stage.addEventListener("pointerdown", e => {
-      drag = { x: e.clientX, start: spin };
+      drag = { x: e.clientX, start: spin, moved: false };
       stage.setPointerCapture(e.pointerId);
-      big.classList.remove("turning");
     });
     stage.addEventListener("pointermove", e => {
       if (!drag) return;
-      setSpin(drag.start + (e.clientX - drag.x) * .6, false);
+      const dx = e.clientX - drag.x;
+      if (!drag.moved && Math.abs(dx) < 5) return;
+      if (!drag.moved) { drag.moved = true; clearTimeout(openTimer); big.classList.remove("turning"); }
+      setSpin(drag.start + dx * .6, false);
     });
-    const endDrag = () => { drag = null; };
-    stage.addEventListener("pointerup", endDrag);
-    stage.addEventListener("pointercancel", endDrag);
+    stage.addEventListener("pointerup", () => {
+      if (drag && !drag.moved) { clearTimeout(openTimer); setOpen(!isOpen); }
+      drag = null;
+    });
+    stage.addEventListener("pointercancel", () => { drag = null; });
+    toggleBtn.addEventListener("click", () => { clearTimeout(openTimer); setOpen(!isOpen); });
 
     // ---------- Footer ----------
     document.getElementById("strip").innerHTML = chunks.map(c => `<i style="background:${c}"></i>`).join("");
     const colophon = document.getElementById("colophon");
-    colophon.innerHTML = `Spine colors come from each book's cover. The wall, shelves, lettering, glow and the angle you see it from all come from one random seed, <span></span>. <a href="?seed=">Roll a new seed</a>. Reading data from Bookwise.`;
+    colophon.innerHTML = `Spine colors come from each book's cover. The room, every plant in it, the shelves, the lettering, the lamplight and the angle you see it from all come from one random seed, <span></span>. <a href="?seed=">Roll a new seed</a>. Reading data from Bookwise.`;
     colophon.querySelector("span").textContent = `${SEED.slice(0, 6)}…${SEED.slice(-4)}`;
     colophon.querySelector("a").addEventListener("click", e => {
       e.preventDefault();
@@ -1202,6 +1630,7 @@
     });
 
     // ---------- Boot ----------
+    buildRoom();
     fetch("data/books.json").then(r => r.json()).then(data => {
       books = data;
       books.forEach(decorate);
@@ -1221,6 +1650,7 @@
           if (innerWidth === w) return;
           w = innerWidth;
           layout(false);
+          buildRoom();
         }, 120);
       });
     }).catch(() => {
