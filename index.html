@@ -366,8 +366,14 @@
       height: 100%;
       transform-origin: left;
       transform: rotateY(90deg);
-      background: var(--bg) center / cover no-repeat;
+      background: var(--bg);
       backface-visibility: hidden;
+    }
+    .book .face img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
     }
     .book .face::after {
       content: "";
@@ -396,6 +402,9 @@
       height: 100%;
       object-fit: cover;
     }
+    /* Covers fade up over the book's own color once they've loaded, instead of popping in. */
+    .face img, .front img { opacity: 0; transition: opacity .35s ease; }
+    .face img.ready, .front img.ready { opacity: 1; }
     .front::after {
       /* Hinge crease and a soft sheen. */
       content: "";
@@ -739,6 +748,7 @@
     const chunks = Array.from({ length: 10 }, (_, i) => "#" + SEED.slice(i * 6, i * 6 + 6));
     const bytes = SEED.match(/../g).map(h => parseInt(h, 16));
     const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const canHover = matchMedia("(hover: hover)").matches;
     const root = document.documentElement;
 
     // ---------- Color helpers ----------
@@ -1162,16 +1172,22 @@
       el.replaceChildren(lift);
     }
 
+    function coverImg(book, lazy) {
+      const img = document.createElement("img");
+      img.alt = "";
+      img.decoding = "async";
+      if (lazy) img.loading = "lazy";
+      img.onload = () => img.classList.add("ready");
+      img.src = `covers/${book.id}.webp`;
+      if (img.complete) img.classList.add("ready");  // already cached: no fade
+      return img;
+    }
+
     function frontEl(book) {
       const front = document.createElement("span");
       front.className = "front";
       if (book.c) {
-        const img = document.createElement("img");
-        img.src = `covers/${book.id}.webp`;
-        img.alt = "";
-        img.loading = "lazy";
-        img.decoding = "async";
-        front.append(img);
+        front.append(coverImg(book, true));
       } else {
         front.innerHTML = madeCover();
         front.querySelector("b").textContent = book.t;
@@ -1207,7 +1223,7 @@
       if (book.out || el.querySelector(".face")) return;
       const face = document.createElement("span");
       face.className = "face";
-      if (book.c) face.style.backgroundImage = `url(covers/${book.id}.webp)`;
+      if (book.c) face.append(coverImg(book, false));
       el.querySelector(".lift").append(face);
     }
 
@@ -1285,6 +1301,9 @@
       const holder = document.createElement("div");
       holder.className = "books";
       holder.append(...list.map(b => b.el));
+      // First time the pointer reaches a shelf, start loading every cover on it, so the one
+      // you hover is usually already there.
+      if (canHover) row.addEventListener("pointerover", () => list.forEach(b => ensureFace(b.el, b)), { once: true });
       for (const p of plants) p.atStart ? holder.prepend(p.el) : holder.append(p.el);
       const plank = document.createElement("div");
       plank.className = "plank";
