@@ -288,7 +288,7 @@
       overflow: hidden;
       border-radius: 2px 2px 1px 1px;
       background: var(--bg);
-      box-shadow: 0 0 calc(var(--g) * 16px) 0 color-mix(in oklab, var(--glow) calc(var(--g) * 42%), transparent);
+      box-shadow: 0 0 calc(var(--g) * 20px) calc(var(--g) * 1px) color-mix(in oklab, var(--glow) calc(var(--g) * 50%), transparent);
     }
     .book .spine::after {
       /* Rounded-spine shading. */
@@ -376,6 +376,40 @@
       background: linear-gradient(90deg, var(--bg) 0 2px, #d9cdb4 2px calc(100% - 2px), var(--bg) calc(100% - 2px));
       filter: brightness(.62);
     }
+    .book::before {
+      /* Warm halo the rating throws on the wall behind, seen above shorter neighbors. */
+      content: "";
+      position: absolute;
+      left: 50%;
+      bottom: 10%;
+      width: calc(var(--w) * 2 + 70px);
+      height: 120%;
+      transform: translateX(-50%) translateZ(-24px);
+      pointer-events: none;
+      opacity: calc(var(--g) * .55);
+      background: radial-gradient(closest-side, color-mix(in oklab, var(--glow) 60%, transparent), transparent);
+    }
+    /* A note tucked into the pages marks a book with a written review. */
+    .slip {
+      position: absolute;
+      top: -7px;
+      left: 30%;
+      width: 40%;
+      max-width: 10px;
+      height: 14px;
+      border-radius: 1px 1px 0 0;
+      transform: translateZ(calc(var(--d) * -.5)) rotate(4deg);
+      background: linear-gradient(#f3e9d2, #d9cbab);
+      box-shadow: 0 -1px 3px rgb(0 0 0 / .25);
+    }
+    .book.out .slip {
+      top: -11px;
+      left: auto;
+      right: 18%;
+      width: 12px;
+      max-width: none;
+      transform: translateZ(-4px) rotate(5deg);
+    }
     .book::after {
       /* Light pool the rating casts onto the plank. */
       content: "";
@@ -386,7 +420,7 @@
       height: 34px;
       transform: translateX(-50%);
       pointer-events: none;
-      opacity: calc(var(--g) * .4);
+      opacity: calc(var(--g) * .5);
       /* No mix-blend-mode here: it flattens the book's 3D faces in Chrome. */
       background: radial-gradient(closest-side, color-mix(in oklab, var(--glow) 70%, transparent), transparent);
     }
@@ -425,7 +459,7 @@
       border-radius: 1px 3px 3px 1px;
       background: var(--bg);
       box-shadow:
-        0 0 calc(var(--g) * 18px) 0 color-mix(in oklab, var(--glow) calc(var(--g) * 42%), transparent),
+        0 0 calc(var(--g) * 24px) calc(var(--g) * 1px) color-mix(in oklab, var(--glow) calc(var(--g) * 50%), transparent),
         6px 10px 18px -6px rgb(0 0 0 / .6);
     }
     .front img {
@@ -1195,7 +1229,8 @@
 
     const fracs = { .25: "¼", .5: "½", .75: "¾" };
     const fmtRating = r => Math.floor(r) + (fracs[r % 1] || "");
-    const glowOf = r => r == null ? 0 : clamp((r - 3.5) / 1.5, 0, 1);
+    // Glow starts at 3 stars and climbs; a full 5 gets an extra step so favorites stand out.
+    const glowOf = r => r == null ? 0 : r >= 5 ? 1.35 : clamp((r - 2.5) / 2.5, .1, 1) * .85;
 
     function decorate(book) {
       const rand = rng(SEED + book.id);
@@ -1226,6 +1261,7 @@
       el.dataset.id = book.id;
       const label = [book.t + (book.a ? ` by ${book.a}` : "")];
       label.push(book.r != null ? `rated ${book.r} out of 5` : "not rated");
+      if (book.v) label.push("reviewed");
       el.setAttribute("aria-label", label.join(", "));
       el.style.cssText = `--bg:${book.bg};--fg:${book.fg};--accent:${book.accent};--g:${glowOf(book.r).toFixed(2)};--rot:${book.rot}`;
       el.addEventListener("pointerenter", () => ensureFace(el, book));
@@ -1245,6 +1281,7 @@
       const lift = document.createElement("span");
       lift.className = "lift";
       lift.append(book.out ? frontEl(book) : spineEl(book));
+      if (book.v) lift.insertAdjacentHTML("afterbegin", '<i class="slip"></i>');
       el.replaceChildren(lift);
     }
 
@@ -1806,7 +1843,7 @@
       const pages = books.reduce((n, b) => n + (b.p || 0), 0);
       document.getElementById("summary").innerHTML =
         `<strong>${books.length} books</strong> finished, more than ${(Math.floor(pages / 1000) * 1000).toLocaleString()} pages. ` +
-        `The better I rated a book, the more it <span class="glow-word">glows</span>.`;
+        `The better I rated a book, the more it <span class="glow-word">glows</span>, and a note sticks out of the ones I reviewed.`;
 
       layout(true);
       let w = innerWidth, t;
