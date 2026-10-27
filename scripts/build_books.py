@@ -38,9 +38,11 @@ TITLE_FIXES = {
     "Tribe Of Mentors": "Tribe of Mentors",
 }
 # Fan fiction with no published edition, or no usable scan; these keep a generated cover.
-NO_LOOKUP = {"Harry Potter and the Methods of Rationality", "Significant Digits", "Do the Work"}
-# Open Library cover ids picked by hand where search returned a translation or a placeholder.
+NO_LOOKUP = {"Harry Potter and the Methods of Rationality", "Do the Work"}
+# Covers picked by hand where search returned a translation or a placeholder: an Open
+# Library cover id, or a full image URL for books Open Library doesn't have.
 COVER_OVERRIDES = {
+    "Significant Digits": "https://static.wikia.nocookie.net/hpmor/images/3/33/Significant_Digits_cover.png/revision/latest?cb=20190210150735",
     "Foundation": 374166,
     "The Alchemist": 15091614,
     "All Life is Problem Solving": 265025,
@@ -172,7 +174,8 @@ def main(export_path, cache_dir):
 
         cover_url = product.get("cover_url")
         if title in COVER_OVERRIDES:
-            cover_url = f"https://covers.openlibrary.org/b/id/{COVER_OVERRIDES[title]}-L.jpg"
+            override = COVER_OVERRIDES[title]
+            cover_url = override if isinstance(override, str) else f"https://covers.openlibrary.org/b/id/{override}-L.jpg"
         elif not cover_url and title not in NO_LOOKUP:
             cover_url, pages = openlibrary(title, entry["a"], cache)
             entry["p"] = entry["p"] or pages

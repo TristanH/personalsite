@@ -9,7 +9,7 @@
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="icon" href="favicon.ico" sizes="32x32">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
-  <link rel="preload" href="data/books.json?v=8bac798c71" as="fetch" crossorigin>
+  <link rel="preload" href="data/books.json?v=a97b5a4136" as="fetch" crossorigin>
   <link rel="preload" href="fonts/anybody-latin.woff2" as="font" type="font/woff2" crossorigin>
   <style>
     @font-face {
@@ -1832,7 +1832,7 @@
     // ---------- Boot ----------
     buildRoom();
     Promise.all([
-      fetch("data/books.json?v=8bac798c71").then(r => r.json()),
+      fetch("data/books.json?v=a97b5a4136").then(r => r.json()),
       document.fonts.load('600 16px Anybody').catch(() => {}),
     ]).then(([data]) => {
       books = data;
