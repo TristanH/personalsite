@@ -30,6 +30,7 @@ AUTHOR_FIXES = {
     "The Lies of Locke Lamora": "Scott Lynch",
     "The Alchemist": "Paulo Coelho",
     "The Now Habit": "Neil Fiore",
+    "There Is No Antimemetics Division": "qntm",
 }
 TITLE_FIXES = {
     "The Alchemist (Paulo Coelho)": "The Alchemist",
