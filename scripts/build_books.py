@@ -44,6 +44,8 @@ NO_LOOKUP = {"Harry Potter and the Methods of Rationality", "Do the Work"}
 COVER_OVERRIDES = {
     "Significant Digits": "https://static.wikia.nocookie.net/hpmor/images/3/33/Significant_Digits_cover.png/revision/latest?cb=20190210150735",
     "Foundation": 374166,
+    "Foundation's Edge": 9300673,
+    "Foundation and Earth": 9304027,
     "The Alchemist": 15091614,
     "All Life is Problem Solving": 265025,
     "Mistborn": 14658160,
@@ -59,7 +61,7 @@ COVER_OVERRIDES = {
 def clean_title(raw):
     title = re.sub(r"\s+", " ", raw).strip()
     title = re.sub(r"\s*\{[^}]*\}", "", title)
-    title = re.sub(r"\s*\((?:[^)]*#\d+|[^)]*Book \d+|Penguin Classics[^)]*|Aristillus[^)]*)\)", "", title)
+    title = re.sub(r"\s*\((?:[^)]*#\d+|[^)]*Book \d+|[^)]*, \d+|Penguin Classics[^)]*|Aristillus[^)]*)\)", "", title)
     title = TITLE_FIXES.get(title, title)
     title = re.sub(r"^Farseer \d - ", "", title)
     title = re.sub(r" - (Book Two in the Gentlemen Bastards Sequence|Revised 3rd Edition|Second Edition)$", "", title)
